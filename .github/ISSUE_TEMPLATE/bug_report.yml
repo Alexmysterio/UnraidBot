@@ -1,0 +1,64 @@
+name: 🐛 Bug
+description: Algo no funciona como se espera
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por tomarte el tiempo de reportar. **No pegues tokens, API keys
+        ni tu ID de Telegram sin censurar.** Si el problema es de seguridad, usa
+        el apartado *Security* del repositorio en lugar de un issue público.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción del problema
+      description: ¿Qué esperabas que pasara y qué pasó realmente?
+      placeholder: Al pulsar «Detener» en un contenedor...
+    validations:
+      required: true
+
+  - type: input
+    id: unraid-version
+    attributes:
+      label: Versión de Unraid
+      placeholder: "7.2.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: Forma de instalación
+      options:
+        - Docker Compose por SSH
+        - Compose Manager (Community Applications)
+        - Otro (indícalo abajo)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs relevantes
+      description: Salida de `docker compose logs --tail=200 unraidbot`
+      render: shell
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Contexto adicional
+      description: Configuración no sensible, capturas, pasos para reproducir...
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Comprobaciones
+      options:
+        - label: He eliminado tokens, API keys e IDs personales del reporte.
+          required: true
+        - label: He leído la sección de solución de problemas del README.
+          required: true
+        - label: Uso la última versión del bot.
+          required: true

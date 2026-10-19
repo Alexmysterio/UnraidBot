@@ -1,0 +1,45 @@
+services:
+  unraidbot:
+    build:
+      context: .
+    image: ${UNRAIDBOT_IMAGE:-unraidbot:latest}
+    container_name: unraidbot
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+    # Sin "ports": el bot solo hace conexiones salientes (long polling).
+    env_file:
+      - .env
+    environment:
+      DATA_DIR: /data
+      PUID: ${PUID:-99}
+      PGID: ${PGID:-100}
+      TZ: ${TZ:-Europe/Madrid}
+
+    volumes:
+      - ./data:/data
+
+    # Permite llegar a la API de Unraid por el gateway del bridge de Docker.
+    # Si usas otra red, define UNRAID_API_URL con la IP de tu servidor.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop:
+      - ALL
+    # Solo lo justo para que el entrypoint ajuste /data y baje a PUID:PGID.
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - FOWNER
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

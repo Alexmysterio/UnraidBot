@@ -1,0 +1,42 @@
+name: ✨ Propuesta
+description: Una idea para mejorar UnraidBot
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Las propuestas son bienvenidas. Cuéntanos el caso de uso antes que la
+        implementación: qué quieres conseguir y por qué.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: ¿Qué problema resuelve?
+      placeholder: Me gustaría poder...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+      description: Cómo imaginas la función, comandos o botones.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: ¿Cómo lo haces ahora? ¿Otras herramientas?
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Comprobaciones
+      options:
+        - label: He buscado si ya existe una propuesta similar.
+          required: true
+        - label: La propuesta encaja con el enfoque del proyecto (sin exponer puertos).
+          required: true

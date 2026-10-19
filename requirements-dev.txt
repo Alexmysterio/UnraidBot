@@ -1,0 +1,7 @@
+python-telegram-bot==22.8
+httpx==0.28.1
+python-dotenv==1.1.1
+tzdata==2025.2
+pytest==8.3.4
+pytest-asyncio==0.24.0
+ruff>=0.8,<1.0
