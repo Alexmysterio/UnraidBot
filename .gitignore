@@ -1,0 +1,30 @@
+# Secretos
+.env
+
+# Datos persistidos del bot
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pytest_tmp/
+.test_tmp/
+pytest-cache-files-*/
+.deps/
+.piptmp/
+.pipcache/
+.tools/
+
+# Artefactos locales
+*.log
+schema.graphql
+tree.json
+.coverage
+htmlcov/
+dist/
+*.egg-info/
