@@ -1,0 +1,5 @@
+services:
+  unraidbot:
+    build:
+      context: .
+    image: unraidbot:local

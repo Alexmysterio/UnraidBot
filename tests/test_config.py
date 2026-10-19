@@ -16,9 +16,18 @@ def base_env() -> dict[str, str]:
 def test_valid_settings() -> None:
     settings = Settings.from_env(base_env())
     assert settings.allowed_user_ids == frozenset({111, 222})
+    assert settings.viewer_user_ids == frozenset()
     assert settings.unraid_api_url == "http://host.docker.internal/graphql"
     assert settings.alerts_enabled is True
     assert settings.disk_temp_warning == 50
+
+
+def test_viewer_ids_are_parsed() -> None:
+    env = base_env()
+    env["VIEWER_USER_IDS"] = "333, 444"
+    settings = Settings.from_env(env)
+    assert settings.viewer_user_ids == frozenset({333, 444})
+    assert settings.is_configured is True
 
 
 def test_missing_token_raises() -> None:

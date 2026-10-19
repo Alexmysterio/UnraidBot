@@ -11,6 +11,7 @@ from telegram.ext import ContextTypes
 from ..keyboards import (
     array_keyboard,
     confirm_keyboard,
+    notifications_keyboard,
     parity_keyboard,
     simple_back_keyboard,
     system_keyboard,
@@ -80,8 +81,34 @@ async def show_notifications(update: Update, context: ContextTypes.DEFAULT_TYPE)
         update,
         context,
         build_notifications(snapshot, settings),
-        simple_back_keyboard("s:notif"),
+        notifications_keyboard(),
     )
+
+
+@authorized
+async def notifications_action(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if query is None or query.from_user is None or query.message is None:
+        return
+    if not await ensure_writable(update, context):
+        return
+
+    manager = context.bot_data["confirmations"]
+    confirmation = manager.create(
+        user_id=query.from_user.id,
+        chat_id=query.message.chat_id,
+        action="notifications.archive_all",
+        target="notifications",
+        args={},
+        prompt=(
+            "🗑 <b>Archivar todas las notificaciones</b>\n\n"
+            "Las notificaciones no leídas pasarán al archivo de Unraid. "
+            "No se borra nada de forma permanente.\n\n¿Continuar?"
+        ),
+        success_text="🗑 <b>Notificaciones archivadas.</b>",
+        return_callback="s:notif",
+    )
+    await render(update, context, confirmation.prompt, confirm_keyboard(confirmation.token))
 
 
 @authorized

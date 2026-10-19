@@ -147,3 +147,70 @@ async def test_invalid_action_raises(settings: Settings) -> None:
             await client.docker_action("destroy", "abc")
     finally:
         await client.close()
+
+
+@pytest.mark.asyncio
+async def test_docker_update_all_mutation(settings: Settings) -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        seen["query"] = body["query"]
+        return httpx.Response(
+            200,
+            json={"data": {"docker": {"updateAllContainers": []}}},
+            request=request,
+        )
+
+    client = _client(settings, handler)
+    try:
+        await client.docker_update_all()
+    finally:
+        await client.close()
+
+    assert "updateAllContainers" in str(seen["query"])
+
+
+@pytest.mark.asyncio
+async def test_docker_set_autostart_mutation(settings: Settings) -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        seen["query"] = body["query"]
+        seen["variables"] = body["variables"]
+        return httpx.Response(
+            200,
+            json={"data": {"docker": {"updateAutostartConfiguration": True}}},
+            request=request,
+        )
+
+    client = _client(settings, handler)
+    try:
+        await client.docker_set_autostart("abc", True)
+    finally:
+        await client.close()
+
+    assert "updateAutostartConfiguration" in str(seen["query"])
+    assert seen["variables"] == {"entries": [{"id": "abc", "autoStart": True}]}
+
+
+@pytest.mark.asyncio
+async def test_archive_all_notifications(settings: Settings) -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["query"] = json.loads(request.content)["query"]
+        return httpx.Response(
+            200,
+            json={"data": {"archiveAll": {"unread": {"total": 0}, "archive": {"total": 3}}}},
+            request=request,
+        )
+
+    client = _client(settings, handler)
+    try:
+        await client.archive_all_notifications()
+    finally:
+        await client.close()
+
+    assert "archiveAll" in str(seen["query"])

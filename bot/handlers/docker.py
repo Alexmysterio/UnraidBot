@@ -62,11 +62,12 @@ async def show_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     client = context.bot_data["client"]
     containers = await client.docker_containers()
     items, page, pages = paginate(sort_containers(containers), page, PER_PAGE)
+    update_count = sum(1 for container in containers if container.get("isUpdateAvailable"))
     await render(
         update,
         context,
         build_docker_list(containers, page, PER_PAGE),
-        docker_list_keyboard(items, page, pages),
+        docker_list_keyboard(items, page, pages, update_count),
     )
 
 
@@ -170,11 +171,12 @@ async def container_action(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if refreshed is None:
         containers = await client.docker_containers()
         items, current_page, pages = paginate(sort_containers(containers), page, PER_PAGE)
+        update_count = sum(1 for item in containers if item.get("isUpdateAvailable"))
         await render(
             update,
             context,
             build_docker_list(containers, current_page, PER_PAGE),
-            docker_list_keyboard(items, current_page, pages),
+            docker_list_keyboard(items, current_page, pages, update_count),
         )
         return
     await render(
@@ -228,5 +230,90 @@ async def ask_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             "El proceso puede tardar unos minutos. Revisa la ficha para ver el estado."
         ),
         return_callback=f"d:v:{token}:{page}",
+    )
+    await render(update, context, confirmation.prompt, confirm_keyboard(confirmation.token))
+
+
+@authorized
+async def toggle_autostart(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if query is None:
+        return
+    parts = query.data.split(":")
+    token = parts[2] if len(parts) > 2 else ""
+    page = int(parts[3]) if len(parts) > 3 and parts[3].isdigit() else 0
+
+    container, _ = await _detail_by_token(context, token)
+    if container is None:
+        await notify(update, context, "Ese contenedor ya no existe.")
+        return
+    if not await ensure_writable(update, context):
+        return
+
+    name = _name(container)
+    new_value = not bool(container.get("autoStart"))
+    client = context.bot_data["client"]
+    try:
+        await client.docker_set_autostart(str(container["id"]), new_value)
+    except UnraidError as exc:
+        await audit(update, context, "docker.autostart", name, outcome="error")
+        await notify(update, context, f"❌ No se pudo cambiar el autostart: {exc}")
+        return
+
+    await audit(update, context, "docker.autostart", f"{name}={new_value}")
+    try:
+        await query.answer(f"Autostart {'activado' if new_value else 'desactivado'}")
+    except TelegramError:
+        pass
+
+    await asyncio.sleep(0.4)
+    refreshed, _ = await _detail_by_token(context, token)
+    if refreshed is not None:
+        await render(
+            update,
+            context,
+            build_docker_detail(refreshed),
+            docker_detail_keyboard(refreshed, page),
+        )
+
+
+@authorized
+async def ask_update_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if query is None or query.from_user is None or query.message is None:
+        return
+    if not await ensure_writable(update, context):
+        return
+
+    client = context.bot_data["client"]
+    containers = await client.docker_containers()
+    updates = [container for container in containers if container.get("isUpdateAvailable")]
+    if not updates:
+        await notify(update, context, "✅ No hay actualizaciones pendientes.")
+        return
+
+    self_update = any(_is_self(container, context) for container in updates)
+    warning = (
+        "\n\n⚠️ Incluye el propio bot: se reiniciará y perderás la conexión unos segundos."
+        if self_update
+        else ""
+    )
+    manager = context.bot_data["confirmations"]
+    confirmation = manager.create(
+        user_id=query.from_user.id,
+        chat_id=query.message.chat_id,
+        action="docker.update_all",
+        target="all",
+        args={},
+        prompt=(
+            f"⬆️ <b>Actualizar {len(updates)} contenedores</b>\n\n"
+            "Se descargarán las imágenes más recientes y se recrearán los contenedores. "
+            f"Puede tardar varios minutos.{warning}\n\n¿Continuar?"
+        ),
+        success_text=(
+            f"✅ <b>Actualización de {len(updates)} contenedores lanzada</b>\n\n"
+            "El proceso puede tardar varios minutos. Revisa la lista para ver el estado."
+        ),
+        return_callback="m:docker",
     )
     await render(update, context, confirmation.prompt, confirm_keyboard(confirmation.token))

@@ -68,7 +68,7 @@ async def post_init(application: Application) -> None:
         LOG.info("Usando socket Unix de Unraid: %s", settings.unraid_api_socket)
     if not settings.is_configured:
         LOG.warning(
-            "ALLOWED_USER_IDS está vacío: el bot está en modo configuración. "
+            "ALLOWED_USER_IDS y VIEWER_USER_IDS están vacíos: el bot está en modo configuración. "
             "Envía /id al bot y añade tu ID."
         )
     if settings.read_only:
@@ -122,7 +122,7 @@ def main() -> None:
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("telegram.ext.Application").setLevel(logging.INFO)
 
-    if not settings.allowed_user_ids:
+    if not settings.is_configured:
         LOG.warning("Arranque sin usuarios autorizados: solo responderá /id y /help.")
 
     application = build_application(settings)

@@ -32,6 +32,7 @@ def settings(tmp_path: Path) -> Settings:
         unraid_api_socket=None,
         unraid_verify_ssl=False,
         allowed_user_ids=frozenset({111}),
+        viewer_user_ids=frozenset(),
         allowed_chat_ids=frozenset(),
         read_only=False,
         data_dir=tmp_path,

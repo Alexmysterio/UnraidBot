@@ -21,6 +21,8 @@ async def _execute(context: ContextTypes.DEFAULT_TYPE, item: Confirmation) -> No
     action = item.action
     if action == "docker.update":
         await client.docker_action("update", str(item.args["id"]))
+    elif action == "docker.update_all":
+        await client.docker_update_all()
     elif action.startswith("vm."):
         await client.vm_action(action.split(".", 1)[1], str(item.args["id"]))
     elif action == "array.start":
@@ -31,6 +33,8 @@ async def _execute(context: ContextTypes.DEFAULT_TYPE, item: Confirmation) -> No
         await client.parity_action("start")
     elif action == "parity.cancel":
         await client.parity_action("cancel")
+    elif action == "notifications.archive_all":
+        await client.archive_all_notifications()
     else:
         raise UnraidError(f"Acción desconocida: {action}")
 

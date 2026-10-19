@@ -8,8 +8,8 @@ help: ## Muestra esta ayuda
 setup: ## Crea .env de forma interactiva
 	bash scripts/setup.sh
 
-up: ## Construye y arranca el contenedor
-	docker compose up -d --build
+up: ## Arranca el contenedor con la imagen publicada
+	docker compose up -d
 
 down: ## Detiene el contenedor
 	docker compose down
@@ -17,8 +17,11 @@ down: ## Detiene el contenedor
 logs: ## Sigue los logs del bot
 	docker compose logs -f --tail=200 unraidbot
 
-build: ## Construye la imagen
-	docker compose build
+build: ## Construye la imagen en local
+	docker compose -f docker-compose.yml -f docker-compose.build.yml build
+
+dev: ## Construye y arranca en local
+	docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 
 test: ## Ejecuta los tests
 	python -m pytest -q

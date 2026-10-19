@@ -85,7 +85,7 @@ def physical_disks_keyboard() -> Keyboard:
 
 
 def docker_list_keyboard(
-    containers: list[dict[str, Any]], page: int, total_pages: int
+    containers: list[dict[str, Any]], page: int, total_pages: int, update_count: int = 0
 ) -> Keyboard:
     buttons = []
     for container in containers:
@@ -93,6 +93,11 @@ def docker_list_keyboard(
         label = f"{container_emoji(container.get('state'))} {shorten(name, 20)}"
         buttons.append(Button(label, callback_data=f"d:v:{short_id(str(container.get('id') or name))}:{page}"))
     rows = _rows(buttons, per_row=2)
+
+    if update_count:
+        rows.append(
+            [Button(f"⬆️ Actualizar todo ({update_count})", callback_data="d:updateall")]
+        )
 
     nav: list[Button] = []
     if total_pages > 1:
@@ -133,6 +138,8 @@ def docker_detail_keyboard(container: dict[str, Any], page: int = 0) -> Keyboard
             Button("🔄 Actualizar", callback_data=f"d:v:{token}:{page}"),
         ]
     )
+    auto_label = "🔔 Autostart: sí" if container.get("autoStart") else "🔕 Autostart: no"
+    rows.append([Button(auto_label, callback_data=f"d:autostart:{token}:{page}")])
     if container.get("isUpdateAvailable"):
         rows.append([Button("⬆️ Actualizar imagen", callback_data=f"d:update:{token}:{page}")])
     if container.get("webUiUrl"):
@@ -253,6 +260,16 @@ def parity_keyboard(running: bool, paused: bool) -> Keyboard:
     rows.append([Button("🔄 Actualizar", callback_data="s:parity"), Button("🧱 Array", callback_data="s:array")])
     rows.append([Button("⚙️ Sistema", callback_data="m:sys"), Button("🏠 Menú", callback_data="m:main")])
     return Keyboard(rows)
+
+
+def notifications_keyboard() -> Keyboard:
+    return Keyboard(
+        [
+            [Button("🗑 Archivar todas", callback_data="s:notifclear")],
+            [Button("🔄 Actualizar", callback_data="s:notif"), Button("🔙 Sistema", callback_data="m:sys")],
+            [Button("🏠 Menú", callback_data="m:main")],
+        ]
+    )
 
 
 def simple_back_keyboard(callback: str = "m:sys") -> Keyboard:

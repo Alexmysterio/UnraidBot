@@ -44,6 +44,8 @@ def register_handlers(application: Application) -> None:
     application.add_handler(CallbackQueryHandler(docker.show_detail, pattern=r"^d:v:"))
     application.add_handler(CallbackQueryHandler(docker.show_logs, pattern=r"^d:log:"))
     application.add_handler(CallbackQueryHandler(docker.ask_update, pattern=r"^d:update:"))
+    application.add_handler(CallbackQueryHandler(docker.ask_update_all, pattern=r"^d:updateall$"))
+    application.add_handler(CallbackQueryHandler(docker.toggle_autostart, pattern=r"^d:autostart:"))
     application.add_handler(
         CallbackQueryHandler(docker.container_action, pattern=r"^d:(start|stop|restart|pause|unpause):")
     )
@@ -57,6 +59,7 @@ def register_handlers(application: Application) -> None:
     application.add_handler(CallbackQueryHandler(system.show_parity, pattern=r"^s:parity$"))
     application.add_handler(CallbackQueryHandler(system.show_ups, pattern=r"^s:ups$"))
     application.add_handler(CallbackQueryHandler(system.show_notifications, pattern=r"^s:notif$"))
+    application.add_handler(CallbackQueryHandler(system.notifications_action, pattern=r"^s:notifclear$"))
     application.add_handler(CallbackQueryHandler(system.show_shares, pattern=r"^s:shares$"))
     application.add_handler(CallbackQueryHandler(system.show_info, pattern=r"^s:info$"))
     application.add_handler(CallbackQueryHandler(system.array_action, pattern=r"^s:(astart|astop)$"))

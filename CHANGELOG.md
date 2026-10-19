@@ -4,6 +4,22 @@ Todas las novedades relevantes de este proyecto se documentan aquí. El formato
 sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto
 usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [1.1.0] - 2026-10-19
+
+### Añadido
+
+- Usuarios de solo lectura con `VIEWER_USER_IDS`.
+- Actualización de todos los contenedores Docker desde el botón «Actualizar todo».
+- Activar/desactivar el autostart de cada contenedor desde su ficha.
+- Archivado de todas las notificaciones de Unraid.
+- Instalación sin clonar el repositorio usando la imagen publicada en GHCR.
+- README centrado en el usuario, con un `docker-compose.yml` listo para copiar.
+
+### Cambiado
+
+- La imagen por defecto de Compose ahora es `ghcr.io/alexmysterio/unraidbot:latest`.
+- El build local se hace con `docker-compose.build.yml`.
+
 ## [1.0.0] - 2026-10-19
 
 ### Añadido

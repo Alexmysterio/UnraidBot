@@ -28,5 +28,6 @@ CODE_OF_CONDUCT.md
 CHANGELOG.md
 README.md
 docker-compose.yml
+docker-compose.build.yml
 requirements-dev.txt
 *.md

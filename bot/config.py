@@ -58,6 +58,7 @@ class Settings:
     unraid_api_socket: str | None
     unraid_verify_ssl: bool
     allowed_user_ids: frozenset[int]
+    viewer_user_ids: frozenset[int]
     allowed_chat_ids: frozenset[int]
     read_only: bool
     data_dir: Path
@@ -75,8 +76,8 @@ class Settings:
 
     @property
     def is_configured(self) -> bool:
-        """True si hay al menos un usuario autorizado."""
-        return bool(self.allowed_user_ids)
+        """True si hay al menos un usuario (admin o de solo lectura)."""
+        return bool(self.allowed_user_ids or self.viewer_user_ids)
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "Settings":
@@ -105,6 +106,11 @@ class Settings:
         except ConfigError as exc:
             errors.append(str(exc))
             allowed_users = frozenset()
+        try:
+            viewer_users = _as_id_set(source.get("VIEWER_USER_IDS"))
+        except ConfigError as exc:
+            errors.append(str(exc))
+            viewer_users = frozenset()
         try:
             allowed_chats = _as_id_set(source.get("ALLOWED_CHAT_IDS"))
         except ConfigError as exc:
@@ -149,6 +155,7 @@ class Settings:
             unraid_api_socket=api_socket,
             unraid_verify_ssl=_as_bool(source.get("UNRAID_VERIFY_SSL"), False),
             allowed_user_ids=allowed_users,
+            viewer_user_ids=viewer_users,
             allowed_chat_ids=allowed_chats,
             read_only=_as_bool(source.get("READ_ONLY"), False),
             data_dir=data_dir,

@@ -156,6 +156,29 @@ query DockerLogs($id: PrefixedID!, $tail: Int) {
 }
 """
 
+DOCKER_UPDATE_ALL = """
+mutation UpdateAllContainers {
+  docker { updateAllContainers { id state } }
+}
+"""
+
+DOCKER_SET_AUTOSTART = """
+mutation SetAutostart($entries: [DockerAutostartEntryInput!]!) {
+  docker {
+    updateAutostartConfiguration(entries: $entries, persistUserPreferences: true)
+  }
+}
+"""
+
+ARCHIVE_ALL_NOTIFICATIONS = """
+mutation ArchiveAllNotifications {
+  archiveAll {
+    unread { total }
+    archive { total }
+  }
+}
+"""
+
 ARRAY_SET_STATE = """
 mutation SetArrayState($state: ArrayStateInputState!) {
   array { setState(input: { desiredState: $state }) { state } }
@@ -443,3 +466,25 @@ class UnraidClient:
         if query is None:
             raise ValueError(f"Acción de paridad desconocida: {action}")
         await self._execute(query, retry=False)
+
+    async def docker_update_all(self) -> None:
+        """Actualiza todos los contenedores con imagen nueva."""
+        await self._execute(DOCKER_UPDATE_ALL, retry=False, timeout=900.0)
+
+    async def docker_set_autostart(self, container_id: str, auto_start: bool) -> None:
+        await self._execute(
+            DOCKER_SET_AUTOSTART,
+            {
+                "entries": [
+                    {
+                        "id": container_id,
+                        "autoStart": auto_start,
+                    }
+                ]
+            },
+            retry=False,
+        )
+
+    async def archive_all_notifications(self) -> None:
+        """Archiva todas las notificaciones no leídas."""
+        await self._execute(ARCHIVE_ALL_NOTIFICATIONS, retry=False)

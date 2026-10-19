@@ -30,13 +30,31 @@ def get_settings(context: ContextTypes.DEFAULT_TYPE) -> Settings:
 
 def is_authorized(settings: Settings, update: Update) -> bool:
     user = update.effective_user
-    if user is None or user.id not in settings.allowed_user_ids:
+    if user is None:
+        return False
+    if user.id not in settings.allowed_user_ids and user.id not in settings.viewer_user_ids:
         return False
     chat = update.effective_chat
     if settings.allowed_chat_ids and chat is not None:
         if chat.type != "private" and chat.id not in settings.allowed_chat_ids:
             return False
     return True
+
+
+def role_for(settings: Settings, user_id: int) -> str | None:
+    """Devuelve 'admin', 'viewer' o None."""
+    if user_id in settings.allowed_user_ids:
+        return "admin"
+    if user_id in settings.viewer_user_ids:
+        return "viewer"
+    return None
+
+
+def is_writable(settings: Settings, user_id: int) -> bool:
+    """True si el usuario puede ejecutar acciones que modifican el servidor."""
+    if settings.read_only:
+        return False
+    return user_id in settings.allowed_user_ids
 
 
 async def notify(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str) -> None:
@@ -73,19 +91,19 @@ async def deny(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat = update.effective_chat
     if chat is None or chat.type != "private":
         return
-    if not settings.allowed_user_ids:
+    if not settings.is_configured:
         text = (
             "⚙️ <b>Bot sin configurar</b>\n\n"
             f"Tu ID de Telegram es <code>{user_id}</code>.\n\n"
-            "Añádelo a <code>ALLOWED_USER_IDS</code> en el archivo <code>.env</code> "
-            "y reinicia el contenedor:\n"
+            "Añádelo a <code>ALLOWED_USER_IDS</code> (administración) o "
+            "<code>VIEWER_USER_IDS</code> (solo lectura) y reinicia el contenedor:\n"
             "<code>docker compose up -d --force-recreate</code>"
         )
     else:
         text = (
             "⛔ <b>No autorizado</b>\n\n"
             f"Tu ID de Telegram es <code>{user_id}</code>. "
-            "No está en <code>ALLOWED_USER_IDS</code>."
+            "No está en <code>ALLOWED_USER_IDS</code> ni en <code>VIEWER_USER_IDS</code>."
         )
     try:
         await update.effective_message.reply_text(text, parse_mode=HTML)
@@ -122,9 +140,13 @@ def authorized(handler: Handler) -> Handler:
 
 async def ensure_writable(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     settings = get_settings(context)
-    if not settings.read_only:
+    user = update.effective_user
+    if user is not None and is_writable(settings, user.id):
         return True
-    await notify(update, context, "🔒 El bot está en modo solo lectura (READ_ONLY=true).")
+    if settings.read_only:
+        await notify(update, context, "🔒 El bot está en modo solo lectura (READ_ONLY=true).")
+    else:
+        await notify(update, context, "🔒 Tu usuario tiene acceso de solo lectura.")
     return False
 
 
@@ -242,10 +264,13 @@ async def cmd_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if user.username:
         lines.append(f"Usuario: @{esc(user.username)}")
     lines.append("")
-    if not settings.allowed_user_ids:
+    role = role_for(settings, user.id)
+    if role == "admin":
+        lines.append("✅ Estás autorizado como <b>administrador</b>.")
+    elif role == "viewer":
+        lines.append("👁️ Estás autorizado en <b>solo lectura</b>.")
+    elif not settings.is_configured:
         lines.append("⚙️ El bot no tiene usuarios autorizados. Añade el ID de usuario a <code>ALLOWED_USER_IDS</code>.")
-    elif user.id in settings.allowed_user_ids:
-        lines.append("✅ Estás autorizado.")
     else:
         lines.append("⛔ No estás autorizado. Pide que añadan tu ID a <code>ALLOWED_USER_IDS</code>.")
     await render(update, context, "\n".join(lines), main_menu())

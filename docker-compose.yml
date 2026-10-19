@@ -1,8 +1,6 @@
 services:
   unraidbot:
-    build:
-      context: .
-    image: ${UNRAIDBOT_IMAGE:-unraidbot:latest}
+    image: ${UNRAIDBOT_IMAGE:-ghcr.io/alexmysterio/unraidbot:latest}
     container_name: unraidbot
     restart: unless-stopped
     stop_grace_period: 30s

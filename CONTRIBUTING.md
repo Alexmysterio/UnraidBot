@@ -26,6 +26,12 @@ python -m pytest -q
 docker compose config --quiet   # si tocas el compose
 ```
 
+Para construir la imagen en local:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+```
+
 Los tests no necesitan Telegram ni Unraid real. Usan `httpx.MockTransport` y snapshots sintéticos; si añades lógica, añade su test.
 
 ## Estilo

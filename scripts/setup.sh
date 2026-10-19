@@ -111,10 +111,10 @@ if [[ -n "$COMPOSE" ]]; then
     read -r -p "¿Construir y arrancar el contenedor ahora? [S/n] " start_now
     case "${start_now:-s}" in
         n|N|no|No|NO)
-            echo "Cuando quieras: docker compose up -d --build"
+            echo "Cuando quieras: docker compose up -d"
             ;;
         *)
-            $COMPOSE up -d --build
+            $COMPOSE up -d
             echo
             echo "📋 Logs: docker compose logs -f unraidbot"
             echo "🩺 Diagnóstico: docker compose exec unraidbot python -m bot.doctor"
@@ -122,5 +122,5 @@ if [[ -n "$COMPOSE" ]]; then
     esac
 else
     echo "Docker Compose no está disponible en este shell."
-    echo "Cuando lo tengas: docker compose up -d --build"
+    echo "Cuando lo tengas: docker compose up -d"
 fi
