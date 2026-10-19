@@ -21,7 +21,7 @@ build: ## Construye la imagen
 	docker compose build
 
 test: ## Ejecuta los tests
-	pytest -q
+	python -m pytest -q
 
 lint: ## Ejecuta el linter
 	ruff check .

@@ -378,7 +378,7 @@ python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
 ruff check .
-pytest -q
+python -m pytest -q
 ```
 
 También puedes usar `make test`, `make lint` o `make doctor` si tienes `make`.

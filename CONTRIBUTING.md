@@ -22,7 +22,7 @@ Comprobaciones antes de subir cambios:
 
 ```bash
 ruff check .
-pytest -q
+python -m pytest -q
 docker compose config --quiet   # si tocas el compose
 ```
 
