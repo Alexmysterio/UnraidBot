@@ -4,4 +4,4 @@ python-dotenv==1.1.1
 tzdata==2025.2
 pytest==8.3.4
 pytest-asyncio==0.24.0
-ruff>=0.8,<1.0
+ruff>=0.17.1,<1.0
