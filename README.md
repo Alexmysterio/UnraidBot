@@ -1,5 +1,7 @@
 # 🤖 UnraidBot
 
+[![CI](https://github.com/Alexmysterio/UnraidBot/actions/workflows/ci.yml/badge.svg)](https://github.com/Alexmysterio/UnraidBot/actions/workflows/ci.yml)
+
 Administra tu servidor **Unraid** desde **Telegram** sin abrir puertos, sin VPN y sin exponer el WebGUI a Internet.
 
 El bot usa **long polling** contra Telegram (conexiones salientes) y habla con la **API GraphQL local de Unraid**. No hay ningún puerto de entrada, ni webhook público, ni reverse proxy.
@@ -33,6 +35,22 @@ bash scripts/setup.sh
 El asistente te pide el token de @BotFather, la API key de Unraid, la URL de la API y, opcionalmente, tu ID de Telegram. Genera `.env` con permisos `600` y puede construir y arrancar el contenedor por ti.
 
 Si prefieres hacerlo a mano, sigue los pasos detallados de abajo.
+
+### Imagen publicada
+
+Cada release se publica en GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/alexmysterio/unraidbot:latest
+```
+
+Para usarla con Compose, define en `.env`:
+
+```dotenv
+UNRAIDBOT_IMAGE=ghcr.io/alexmysterio/unraidbot:latest
+```
+
+Y arranca con `docker compose pull && docker compose up -d`.
 
 ---
 
