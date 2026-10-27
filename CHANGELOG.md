@@ -4,6 +4,18 @@ Todas las novedades relevantes de este proyecto se documentan aquí. El formato
 sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto
 usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [1.5.1] - 2026-10-27
+
+### Seguridad
+
+- `python-dotenv` 1.2.4 corrige la escritura arbitraria de archivos mediante enlaces simbólicos en `set_key` ([GHSA-mf9w-mj56-hr94](https://github.com/advisories/GHSA-mf9w-mj56-hr94)).
+- `pytest` 9.1.1 corrige el manejo de directorios temporales ([GHSA-6w46-j5rx-g56g](https://github.com/advisories/GHSA-6w46-j5rx-g56g)).
+
+### Cambiado
+
+- `pytest-asyncio` 1.4.1, `ruff` 0.17.3 y `tzdata` 2026.5.
+- `requirements-dev.txt` fija las herramientas de desarrollo compatibles con pytest 9.
+
 ## [1.5.0] - 2026-10-27
 
 ### Añadido
