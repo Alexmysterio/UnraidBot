@@ -9,14 +9,16 @@ from typing import Any
 from telegram import BotCommand, Update
 from telegram.ext import Application
 
-from . import __version__
+from . import __version__, features
 from .config import Settings
+from .digest import DigestScheduler
 from .handlers import register_handlers
 from .handlers.common import on_error
 from .heartbeat import heartbeat_loop, heartbeat_path
 from .monitor import AlertMonitor
 from .security import AuditLog, ConfirmationManager, RateLimiter
 from .state import StateStore
+from .telegram import configure_telegram
 from .unraid import UnraidClient
 
 LOG = logging.getLogger(__name__)
@@ -34,7 +36,10 @@ async def post_init(application: Application) -> None:
     application.bot_data["store"] = store
     application.bot_data["audit"] = AuditLog(settings.data_dir / "audit.log")
     application.bot_data["confirmations"] = ConfirmationManager(ttl_seconds=180)
-    application.bot_data["rate"] = RateLimiter(actions=30, window=60)
+    application.bot_data["rate"] = RateLimiter(
+        actions=settings.user_rate_limit_actions,
+        window=settings.user_rate_limit_window,
+    )
 
     heartbeat_task = asyncio.create_task(
         heartbeat_loop(heartbeat_path(settings.data_dir)),
@@ -46,20 +51,37 @@ async def post_init(application: Application) -> None:
     application.bot_data["monitor"] = monitor
     monitor.start()
 
+    digest = DigestScheduler(settings, client, store, application.bot)
+    application.bot_data["digest"] = digest
+    digest.start()
+
     try:
-        await application.bot.set_my_commands(
+        commands = [
+            BotCommand("menu", "Menú principal"),
+            BotCommand("estado", "Estado general del servidor"),
+            BotCommand("discos", "Discos y estado SMART"),
+            BotCommand("docker", "Gestionar contenedores"),
+            BotCommand("vms", "Gestionar máquinas virtuales"),
+            BotCommand("sistema", "Array, paridad, UPS y shares"),
+            BotCommand("alertas", "Alertas automáticas"),
+            BotCommand("buscar", "Buscar recursos del servidor"),
+            BotCommand("historial", "Historial de auditoría (admin)"),
+            BotCommand("rendimiento", "CPU y RAM con sparklines"),
+            BotCommand("resumen", "Resumen diario ahora"),
+        ]
+        if features.is_enabled("qbittorrent"):
+            commands.append(BotCommand("qbittorrent", "Torrents, límites y categorías"))
+        if features.is_enabled("mikrotik"):
+            commands.append(BotCommand("mikrotik", "Router: interfaces, rutas y firewall"))
+        if features.is_enabled("wol"):
+            commands.append(BotCommand("wol", "Encender equipos por Wake-on-LAN"))
+        commands.extend(
             [
-                BotCommand("menu", "Menú principal"),
-                BotCommand("estado", "Estado general del servidor"),
-                BotCommand("discos", "Discos y estado SMART"),
-                BotCommand("docker", "Gestionar contenedores"),
-                BotCommand("vms", "Gestionar máquinas virtuales"),
-                BotCommand("sistema", "Array, paridad, UPS y shares"),
-                BotCommand("alertas", "Alertas automáticas"),
                 BotCommand("help", "Ayuda"),
                 BotCommand("id", "Ver mi ID de Telegram"),
             ]
         )
+        await application.bot.set_my_commands(commands)
     except Exception as exc:  # noqa: BLE001 - no impedir el arranque por cosmética
         LOG.warning("No se pudieron publicar los comandos del bot: %s", exc)
 
@@ -75,14 +97,21 @@ async def post_init(application: Application) -> None:
         LOG.warning("READ_ONLY=true: las acciones de escritura están deshabilitadas.")
     if not settings.alerts_enabled:
         LOG.info("ALERTS_ENABLED=false: monitor de alertas desactivado.")
+    if features.count():
+        LOG.info("Herramientas opcionales: %s", ", ".join(feature.label for feature in features.enabled()))
 
 
 async def post_shutdown(application: Application) -> None:
+    digest: DigestScheduler | None = application.bot_data.get("digest")
+    if digest is not None:
+        await digest.stop()
+
     monitor: AlertMonitor | None = application.bot_data.get("monitor")
     if monitor is not None:
         await monitor.stop()
 
-    tasks: list[asyncio.Task[Any]] = application.bot_data.get("tasks", [])
+    tasks: list[asyncio.Task[Any]] = list(application.bot_data.get("tasks", []))
+    tasks.extend(application.bot_data.get("background", []))
     for task in tasks:
         task.cancel()
     if tasks:
@@ -95,14 +124,16 @@ async def post_shutdown(application: Application) -> None:
 
 
 def build_application(settings: Settings) -> Application:
-    application = (
+    features.configure(settings)
+    builder = (
         Application.builder()
         .token(settings.telegram_token)
         .concurrent_updates(True)
         .post_init(post_init)
         .post_shutdown(post_shutdown)
-        .build()
     )
+    builder = configure_telegram(builder, settings)
+    application = builder.build()
     application.bot_data["settings"] = settings
     register_handlers(application)
     application.add_error_handler(on_error)

@@ -116,6 +116,61 @@ def bar(percent: float | None, width: int = 10) -> str:
     return "█" * filled + "░" * (width - filled)
 
 
+SPARK_CHARS = "▁▂▃▄▅▆▇█"
+
+
+def sparkline(
+    values: Iterable[float | int | str | None],
+    width: int = 40,
+    minimum: float = 0.0,
+    maximum: float = 100.0,
+) -> str:
+    """Serie compacta con caracteres de bloque (útil para CPU/RAM)."""
+    samples: list[float] = []
+    for value in values:
+        try:
+            number = float(value)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        if math.isnan(number) or math.isinf(number):
+            continue
+        samples.append(number)
+    if not samples:
+        return "—"
+    samples = samples[-max(1, int(width)) :]
+
+    low, high = float(minimum), float(maximum)
+    if high <= low:
+        low, high = min(samples), max(samples)
+    if high <= low:
+        low, high = low - 1.0, high + 1.0
+
+    last = len(SPARK_CHARS) - 1
+    chars = []
+    for sample in samples:
+        ratio = (sample - low) / (high - low)
+        index = int(round(max(0.0, min(1.0, ratio)) * last))
+        chars.append(SPARK_CHARS[index])
+    return "".join(chars)
+
+
+def fmt_elapsed(seconds: float | int | None) -> str:
+    """Duración breve para operaciones: ``12 s``, ``1 min 5 s``."""
+    if seconds is None:
+        return "—"
+    try:
+        total = max(0, int(round(float(seconds))))
+    except (TypeError, ValueError):
+        return "—"
+    if total < 60:
+        return f"{total} s"
+    minutes, rest = divmod(total, 60)
+    if minutes < 60:
+        return f"{minutes} min {rest} s" if rest else f"{minutes} min"
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours} h {minutes} min" if minutes else f"{hours} h"
+
+
 def fmt_temp(value: float | int | str | None) -> str:
     if value is None or value == "":
         return "—"
@@ -196,6 +251,23 @@ def parse_iso(value: str | None) -> datetime | None:
     return parsed
 
 
+def fmt_epoch(value: float | int | str | None, tz_name: str = "Europe/Madrid") -> str:
+    """Formatea un timestamp Unix en la zona horaria indicada."""
+    if value is None or value == "":
+        return "—"
+    try:
+        moment = datetime.fromtimestamp(float(value), tz=timezone.utc)
+    except (TypeError, ValueError, OSError, OverflowError):
+        return "—"
+    try:
+        from zoneinfo import ZoneInfo
+
+        moment = moment.astimezone(ZoneInfo(tz_name))
+    except Exception:  # pragma: no cover - zona inválida ya validada
+        pass
+    return moment.strftime("%d/%m/%Y %H:%M")
+
+
 def fmt_uptime(boot_time: str | None) -> str:
     parsed = parse_iso(boot_time)
     if parsed is None:
@@ -204,6 +276,28 @@ def fmt_uptime(boot_time: str | None) -> str:
     if seconds <= 0:
         return "—"
     return fmt_runtime(seconds)
+
+
+def fmt_routeros_uptime(value: str | int | float | None) -> str:
+    """Convierte el uptime de RouterOS (``1w2d03:04:05``) a texto legible."""
+    if value is None or value == "":
+        return "—"
+    if isinstance(value, (int, float)):
+        return fmt_runtime(value)
+    text = str(value).strip()
+    try:
+        return fmt_runtime(float(text))
+    except ValueError:
+        pass
+
+    match = re.fullmatch(
+        r"(?:(\d+)w)?(?:(\d+)d)?(?:(\d+):(\d+):(\d+)(?:\.\d+)?)?",
+        text,
+    )
+    if match is None or not any(match.groups()):
+        return "—"
+    weeks, days, hours, minutes, seconds = (int(part or 0) for part in match.groups())
+    return fmt_runtime(weeks * 604800 + days * 86400 + hours * 3600 + minutes * 60 + seconds)
 
 
 def fmt_net_speed(mbps: float | int | None) -> str:

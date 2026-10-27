@@ -75,3 +75,34 @@ async def test_audit_log_writes_jsonl(tmp_path: Path) -> None:
     assert record["action"] == "docker.stop"
     assert record["target"] == "plex"
     assert record["user_id"] == 1
+
+
+@pytest.mark.asyncio
+async def test_audit_log_read_is_newest_first_and_filters(tmp_path: Path) -> None:
+    path = tmp_path / "audit.log"
+    log = AuditLog(path)
+    for index in range(5):
+        await log.write(
+            user_id=1,
+            username="alois",
+            chat_id=2,
+            action=f"docker.action{index}",
+            target="plex" if index % 2 == 0 else "autobrr",
+        )
+
+    records, total = await log.read(limit=2, offset=0)
+    assert total == 5
+    assert [item["action"] for item in records] == ["docker.action4", "docker.action3"]
+
+    page, _ = await log.read(limit=2, offset=4)
+    assert [item["action"] for item in page] == ["docker.action0"]
+
+    filtered, filtered_total = await log.read(query="AUTOBRR")
+    assert filtered_total == 2
+    assert all(item["target"] == "autobrr" for item in filtered)
+
+
+@pytest.mark.asyncio
+async def test_audit_log_read_missing_file(tmp_path: Path) -> None:
+    log = AuditLog(tmp_path / "missing.log")
+    assert await log.read() == ([], 0)

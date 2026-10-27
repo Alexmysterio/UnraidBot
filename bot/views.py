@@ -15,6 +15,7 @@ from .formatting import (
     esc,
     fmt_array_disk_size,
     fmt_bytes,
+    fmt_epoch,
     fmt_kb,
     fmt_net_speed,
     fmt_pct,
@@ -26,10 +27,12 @@ from .formatting import (
     pct,
     severity_emoji,
     shorten,
+    sparkline,
     vm_emoji,
     vm_state_text,
 )
 from .health import Problem
+from .search import KIND_EMOJI, KIND_LABELS, SearchHit
 from .unraid import Snapshot
 
 ARRAY_STATE_TEXT = {
@@ -54,6 +57,8 @@ ERROR_LABELS = {
     "docker": "Docker",
     "vms": "VMs",
     "info": "información del sistema",
+    "shares": "shares",
+    "physical_disks": "discos físicos",
 }
 
 
@@ -80,6 +85,14 @@ def _number(value: Any) -> float | None:
     if number != number or number in (float("inf"), float("-inf")):
         return None
     return number
+
+
+def _as_list(value: Any) -> list[Any]:
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    return [value]
 
 
 def _array_disks(array: dict[str, Any]) -> list[dict[str, Any]]:
@@ -205,7 +218,7 @@ def build_status(snapshot: Snapshot, settings: Settings, problems: list[Problem]
     cpu_parts: list[str] = []
     if cpu_load is not None:
         cpu_parts.append(fmt_pct(cpu_load))
-    temps = _get(info, "cpu", "packages", "temp", default=[]) or []
+    temps = _as_list(_get(info, "cpu", "packages", "temp", default=[]))
     valid_temps = [value for value in (_number(item) for item in temps) if value is not None]
     if valid_temps:
         cpu_parts.append(fmt_temp(max(valid_temps)))
@@ -373,13 +386,19 @@ def build_disk_detail(disk: dict[str, Any], settings: Settings) -> str:
     return "\n".join(lines)
 
 
-def build_physical_disks(disks: list[dict[str, Any]]) -> str:
+def build_physical_disks(
+    disks: list[dict[str, Any]], page: int = 0, per_page: int = 10
+) -> str:
+    sorted_disks = sorted(disks, key=lambda item: str(item.get("device") or ""))
+    items, page, pages = paginate(sorted_disks, page, per_page)
     lines = ["🔍 <b>Discos físicos</b>", ""]
     if not disks:
         lines.append("No se han detectado discos físicos.")
         return "\n".join(lines)
 
-    for disk in sorted(disks, key=lambda item: str(item.get("device") or ""))[:20]:
+    lines.append(f"Total: {len(disks)} · pág. {page + 1}/{pages}")
+    lines.append("")
+    for disk in items:
         name = disk.get("device") or disk.get("name") or "disco"
         size = fmt_bytes(disk.get("size"))
         temp = fmt_temp(disk.get("temperature"))
@@ -401,8 +420,6 @@ def build_physical_disks(disks: list[dict[str, Any]]) -> str:
         lines.append("")
 
     lines.append("<i>SMART se consulta a la API de Unraid; para atributos completos usa smartctl.</i>")
-    if len(disks) > 20:
-        lines.append(f"<i>Mostrando 20 de {len(disks)} discos.</i>")
     return "\n".join(lines)
 
 
@@ -650,21 +667,27 @@ def build_ups(snapshot: Snapshot) -> str:
         )
         if battery.get("estimatedRuntime") is not None:
             lines.append(f"Autonomía: {fmt_runtime(battery.get('estimatedRuntime'))}")
-        if power.get("loadPercentage") is not None:
-            load = f"Carga: {power.get('loadPercentage')}%"
-            if power.get("currentPower") is not None:
-                load += f" · {power.get('currentPower'):.0f} W"
+        load_percentage = _number(power.get("loadPercentage"))
+        if load_percentage is not None:
+            load = f"Carga: {load_percentage:.0f}%"
+            current_power = _number(power.get("currentPower"))
+            if current_power is not None:
+                load += f" · {current_power:.0f} W"
             lines.append(load)
-        if power.get("inputVoltage"):
-            lines.append(
-                f"Voltaje: {power.get('inputVoltage'):.1f} V entrada"
-                + (f" · {power.get('outputVoltage'):.1f} V salida" if power.get("outputVoltage") else "")
-            )
+        input_voltage = _number(power.get("inputVoltage"))
+        output_voltage = _number(power.get("outputVoltage"))
+        if input_voltage is not None:
+            voltage = f"Voltaje: {input_voltage:.1f} V entrada"
+            if output_voltage is not None:
+                voltage += f" · {output_voltage:.1f} V salida"
+            lines.append(voltage)
         lines.append("")
     return "\n".join(lines).rstrip()
 
 
-def build_notifications(snapshot: Snapshot, settings: Settings) -> str:
+def build_notifications(
+    snapshot: Snapshot, settings: Settings, page: int = 0, per_page: int = 5
+) -> str:
     notifications = snapshot.notifications or {}
     overview = notifications.get("overview") or {}
     unread = overview.get("unread") or {}
@@ -681,7 +704,10 @@ def build_notifications(snapshot: Snapshot, settings: Settings) -> str:
         lines.append("No hay alertas ni avisos pendientes. ✅")
         return "\n".join(lines)
 
-    for item in items[:10]:
+    shown, page, pages = paginate(items, page, per_page)
+    lines.append(f"Total: {len(items)} · pág. {page + 1}/{pages}")
+    lines.append("")
+    for item in shown:
         importance = str(item.get("importance") or "").upper()
         emoji = "🔴" if importance == "ALERT" else "🟠"
         lines.append(f"{emoji} <b>{esc(item.get('subject') or item.get('title') or 'Aviso')}</b>")
@@ -692,8 +718,6 @@ def build_notifications(snapshot: Snapshot, settings: Settings) -> str:
             lines.append(f"<i>{when}</i>")
         lines.append("")
 
-    if len(items) > 10:
-        lines.append(f"… y {len(items) - 10} más.")
     return "\n".join(lines).rstrip()
 
 
@@ -767,9 +791,16 @@ def build_info(snapshot: Snapshot, settings: Settings) -> str:
 # Alertas
 # ---------------------------------------------------------------------------
 
-def build_alerts(settings: Settings, subscribed: bool, problems: list[Problem]) -> str:
+def build_alerts(
+    settings: Settings,
+    subscribed: bool,
+    problems: list[Problem],
+    muted_until: float | None = None,
+) -> str:
     lines = ["🔔 <b>Alertas automáticas</b>", ""]
     lines.append(f"Este chat: {'✅ activadas' if subscribed else '⚪ desactivadas'}")
+    if muted_until is not None:
+        lines.append(f"🔕 Silenciado hasta el {fmt_epoch(muted_until, settings.timezone)}")
     lines.append(f"Revisión: cada {fmt_runtime(settings.alert_interval_seconds)}")
     lines.append(f"Repetición de un aviso activo: cada {fmt_runtime(settings.alert_repeat_minutes * 60)}")
     lines.append("")
@@ -779,13 +810,20 @@ def build_alerts(settings: Settings, subscribed: bool, problems: list[Problem]) 
     )
     lines.append(f"• CPU: {settings.cpu_temp_warning}°C")
     lines.append(f"• RAM: {settings.memory_warning}%")
+    lines.append(f"• Array: {settings.array_usage_warning}%")
+    lines.append(f"• Shares: {settings.share_usage_warning}%")
+    lines.append(f"• Paridad: máximo {settings.parity_max_days} días sin comprobar")
     lines.append("")
     lines.append("<b>Se avisa de</b>")
-    lines.append("• Array detenido o con problemas")
-    lines.append("• Discos en estado rojo/amarillo, con errores o temperatura alta")
-    lines.append("• Contenedores con autostart que estén caídos")
+    lines.append("• API de Unraid inaccesible")
+    lines.append("• Array detenido, casi lleno o con problemas")
+    lines.append("• Discos en estado rojo/amarillo, con errores, SMART o temperatura alta")
+    lines.append("• Shares por encima del umbral de uso")
+    lines.append("• Paridad con errores, fallida o demasiado antigua")
+    lines.append("• Contenedores caídos, unhealthy o en estado DEAD")
     lines.append("• VMs en estado CRASHED")
     lines.append("• UPS en batería, batería baja o fallo")
+    lines.append("• Interfaz de red caída")
     lines.append("• Notificaciones nuevas de Unraid")
     if problems:
         lines.append("")
@@ -807,6 +845,203 @@ def build_recovery_message(titles: list[str], hostname: str) -> str:
     lines = [f"✅ <b>Resuelto · {esc(hostname)}</b>", ""]
     for title in titles:
         lines.append(f"• {esc(title)}")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Búsqueda, historial, rendimiento y resumen
+# ---------------------------------------------------------------------------
+
+def build_search(query: str, hits: list[SearchHit], page: int = 0, per_page: int = 8) -> str:
+    lines = [f"🔎 <b>Búsqueda</b> · «{esc(shorten(query, 60))}»", ""]
+    if not hits:
+        lines.append("No se encontraron resultados.")
+        lines.append("")
+        lines.append("<i>Prueba con otro nombre o abre una sección desde el menú.</i>")
+        return "\n".join(lines)
+
+    shown, page, pages = paginate(hits, page, per_page)
+    lines.append(f"{len(hits)} resultado(s) · pág. {page + 1}/{pages}")
+    lines.append("")
+    for hit in shown:
+        emoji = KIND_EMOJI.get(hit.kind, "•")
+        label = KIND_LABELS.get(hit.kind, hit.kind)
+        lines.append(f"{emoji} <b>{esc(hit.title)}</b> · <i>{esc(label)}</i>")
+        if hit.detail:
+            lines.append(f"   {esc(shorten(hit.detail, 110))}")
+    lines.append("")
+    lines.append("Toca un resultado para abrirlo.")
+    return "\n".join(lines)
+
+
+def build_history(
+    records: list[dict[str, Any]],
+    total: int,
+    page: int,
+    per_page: int,
+    query: str,
+    settings: Settings,
+) -> str:
+    pages = max(1, (total + per_page - 1) // per_page)
+    lines = ["🗂️ <b>Historial de auditoría</b>", ""]
+    if query:
+        lines.append(f"Filtro: <code>{esc(query)}</code>")
+    lines.append(f"{total} registro(s) · pág. {page + 1}/{pages}")
+    lines.append("")
+    if not records:
+        lines.append("No hay registros que coincidan.")
+        return "\n".join(lines)
+
+    for record in records:
+        outcome = str(record.get("outcome") or "ok")
+        emoji = "✅" if outcome == "ok" else "❌"
+        action = str(record.get("action") or "—")
+        target = str(record.get("target") or "")
+        user = record.get("username") or record.get("user_id") or "—"
+        line = f"{emoji} <b>{esc(action)}</b>"
+        if target:
+            line += f" · {esc(shorten(target, 60))}"
+        lines.append(line)
+        when = fmt_timestamp(str(record.get("ts") or ""), settings.timezone)
+        lines.append(f"   <i>{esc(when)} · {esc(user)}</i>")
+    return "\n".join(lines)
+
+
+def _series_stats(values: list[float]) -> str:
+    if not values:
+        return "—"
+    low = min(values)
+    high = max(values)
+    average = sum(values) / len(values)
+    return f"mín {low:.0f}% · media {average:.0f}% · máx {high:.0f}%"
+
+
+def build_performance(
+    snapshot: Snapshot,
+    history: list[dict[str, Any]],
+    settings: Settings,
+) -> str:
+    metrics = snapshot.metrics or {}
+    cpu_now = _number(_get(metrics, "cpu", "percentTotal"))
+    memory = metrics.get("memory") or {}
+    ram_now = _number(memory.get("percentTotal"))
+    if ram_now is None:
+        ram_now = pct(memory.get("used"), memory.get("total"))
+
+    cpu_values = [
+        value
+        for value in (_number(entry.get("cpu")) for entry in history if isinstance(entry, dict))
+        if value is not None
+    ]
+    ram_values = [
+        value
+        for value in (_number(entry.get("ram")) for entry in history if isinstance(entry, dict))
+        if value is not None
+    ]
+
+    lines = ["📈 <b>Rendimiento</b>", ""]
+    lines.append(f"🧠 CPU ahora: <b>{fmt_pct(cpu_now)}</b>")
+    if cpu_values:
+        lines.append(f"<code>{sparkline(cpu_values, width=32)}</code>")
+        lines.append(f"<i>{_series_stats(cpu_values)}</i>")
+    else:
+        lines.append("<i>Sin historial de CPU todavía.</i>")
+    lines.append("")
+    lines.append(f"💾 RAM ahora: <b>{fmt_pct(ram_now)}</b>")
+    if ram_values:
+        lines.append(f"<code>{sparkline(ram_values, width=32)}</code>")
+        lines.append(f"<i>{_series_stats(ram_values)}</i>")
+    else:
+        lines.append("<i>Sin historial de RAM todavía.</i>")
+    lines.append("")
+    lines.append(
+        f"<i>Muestras guardadas: {len(history)} · una cada "
+        f"{fmt_runtime(settings.alert_interval_seconds)}.</i>"
+    )
+    lines.extend(_errors_footer(snapshot))
+    return "\n".join(lines)
+
+
+def build_digest(snapshot: Snapshot, settings: Settings, problems: list[Problem]) -> str:
+    hostname = _server_name(snapshot)
+    lines = [
+        f"📬 <b>Resumen diario · {esc(hostname)}</b>",
+        f"<i>{fmt_timestamp(snapshot.fetched_at.isoformat(), settings.timezone)}</i>",
+        "",
+    ]
+    if not snapshot.reachable:
+        lines.append("🔴 <b>Sin conexión con la API de Unraid</b>")
+        if snapshot.errors:
+            lines.append(_format_error(next(iter(snapshot.errors.values()))))
+        lines.append("")
+        lines.append("Revisa <code>UNRAID_API_URL</code> y el servicio <code>unraid-api</code>.")
+        return "\n".join(lines)
+
+    array = snapshot.array or {}
+    state = array.get("state")
+    capacity = _get(array, "capacity", "kilobytes", default={}) or {}
+    used_kb, total_kb = _number(capacity.get("used")), _number(capacity.get("total"))
+    usage = pct(used_kb, total_kb)
+    array_line = (
+        f"{array_emoji(state)} Array "
+        f"{esc(ARRAY_STATE_TEXT.get(state or '', state or 'desconocido'))}"
+    )
+    if usage is not None:
+        array_line += f" · {usage:.0f}% ({fmt_kb(used_kb)} / {fmt_kb(total_kb)})"
+    lines.append(array_line)
+
+    metrics = snapshot.metrics or {}
+    cpu = _number(_get(metrics, "cpu", "percentTotal"))
+    memory = metrics.get("memory") or {}
+    ram = _number(memory.get("percentTotal"))
+    if ram is None:
+        ram = pct(memory.get("used"), memory.get("total"))
+    lines.append(f"🧠 CPU {fmt_pct(cpu)} · 💾 RAM {fmt_pct(ram)}")
+
+    containers = snapshot.docker
+    if containers is not None:
+        running = sum(1 for item in containers if item.get("state") == "RUNNING")
+        updates = sum(1 for item in containers if item.get("isUpdateAvailable"))
+        docker_line = f"🐳 Docker {running}/{len(containers)} activos"
+        if updates:
+            docker_line += f" · {updates} actualizaciones"
+        lines.append(docker_line)
+
+    vms = snapshot.vms
+    if vms is not None:
+        running_vms = sum(1 for item in vms if item.get("state") in {"RUNNING", "IDLE"})
+        lines.append(f"🖥️ VMs {running_vms}/{len(vms)} en marcha")
+
+    ups = snapshot.ups or []
+    if ups:
+        unit = ups[0]
+        battery = unit.get("battery") or {}
+        ups_line = f"🔋 UPS {esc(unit.get('status') or 'desconocido')}"
+        if battery.get("chargeLevel") is not None:
+            ups_line += f" · {battery['chargeLevel']}%"
+        lines.append(ups_line)
+
+    notifications = snapshot.notifications or {}
+    unread = _get(notifications, "overview", "unread", default={}) or {}
+    if unread:
+        alerts = int(unread.get("alert") or 0)
+        warnings = int(unread.get("warning") or 0)
+        if alerts or warnings:
+            lines.append(f"🔔 {alerts} alertas · {warnings} avisos sin leer")
+        else:
+            lines.append("🔔 Sin notificaciones nuevas")
+
+    lines.append("")
+    lines.append("<b>Incidencias</b>")
+    if problems:
+        for problem in problems[:8]:
+            lines.append(f"{severity_emoji(problem.severity)} {esc(problem.title)}")
+        if len(problems) > 8:
+            lines.append(f"… y {len(problems) - 8} más")
+    else:
+        lines.append("✅ Sin incidencias")
+
+    lines.extend(_errors_footer(snapshot))
     return "\n".join(lines)
 
 

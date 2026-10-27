@@ -16,6 +16,7 @@ from ..keyboards import (
     simple_back_keyboard,
     system_keyboard,
 )
+from ..i18n import localize
 from ..unraid import Snapshot
 from ..views import (
     build_array,
@@ -25,8 +26,11 @@ from ..views import (
     build_shares,
     build_system_menu,
     build_ups,
+    paginate,
 )
 from .common import audit, authorized, ensure_writable, get_settings, notify, render
+
+PER_PAGE = 5
 
 
 @authorized
@@ -75,13 +79,22 @@ async def show_ups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 @authorized
 async def show_notifications(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     settings = get_settings(context)
+    page = 0
+    query = update.callback_query
+    if query is not None and query.data.startswith("s:notif:"):
+        part = query.data.split(":")[2]
+        if part.isdigit():
+            page = int(part)
     client = context.bot_data["client"]
-    snapshot = Snapshot(notifications=await client.notifications())
+    notifications = await client.notifications()
+    snapshot = Snapshot(notifications=notifications)
+    items = notifications.get("warningsAndAlerts") or []
+    _, page, pages = paginate(items, page, PER_PAGE)
     await render(
         update,
         context,
-        build_notifications(snapshot, settings),
-        notifications_keyboard(),
+        build_notifications(snapshot, settings, page, PER_PAGE),
+        notifications_keyboard(page, pages),
     )
 
 
@@ -154,8 +167,9 @@ async def array_action(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 "en ese caso, inícialo desde el WebGUI.\n\n¿Continuar?"
             ),
             success_text=(
-                "▶️ <b>Iniciando el array…</b>\n\n"
-                "Puede tardar unos segundos. Abre «Array» para ver el estado actualizado."
+                "✅ <b>Array iniciado</b>\n\n"
+                "Los discos están montados y los servicios disponibles. "
+                "Abre «Array» para ver el estado actualizado."
             ),
             return_callback="s:array",
         )
@@ -172,8 +186,8 @@ async def array_action(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 "Los contenedores y VMs que usen el array pueden fallar.\n\n¿Continuar?"
             ),
             success_text=(
-                "⏹ <b>Deteniendo el array…</b>\n\n"
-                "Espera unos segundos y comprueba el estado en «Array»."
+                "✅ <b>Array detenido</b>\n\n"
+                "Los discos están desmontados y los shares ya no están disponibles."
             ),
             return_callback="s:array",
         )
@@ -240,7 +254,7 @@ async def parity_action(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
 
     try:
-        await query.answer(toast)
+        await query.answer(localize(toast))
     except TelegramError:
         pass
     await asyncio.sleep(1.0)

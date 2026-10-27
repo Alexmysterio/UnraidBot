@@ -235,6 +235,8 @@ class Snapshot:
     notifications: dict[str, Any] | None = None
     docker: list[dict[str, Any]] | None = None
     vms: list[dict[str, Any]] | None = None
+    physical_disks: list[dict[str, Any]] | None = None
+    shares: list[dict[str, Any]] | None = None
     errors: dict[str, str] = field(default_factory=dict)
     fetched_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -248,6 +250,8 @@ class Snapshot:
             self.notifications,
             self.docker,
             self.vms,
+            self.physical_disks,
+            self.shares,
         )
         return any(value is not None for value in values)
 
@@ -414,8 +418,12 @@ class UnraidClient:
         data = await self._execute(DOCKER_LOGS_QUERY, {"id": container_id, "tail": tail})
         return ((data.get("docker") or {}).get("logs") or {}).get("lines") or []
 
-    async def snapshot(self, *, include_info: bool = True) -> Snapshot:
-        """Lanza las consultas en paralelo y tolera fallos parciales."""
+    async def snapshot(self, *, include_info: bool = True, include_storage: bool = False) -> Snapshot:
+        """Lanza las consultas en paralelo y tolera fallos parciales.
+
+        ``include_storage`` añade discos físicos (SMART) y shares. Solo se usa
+        en las pantallas y en el monitor que necesitan esos datos.
+        """
         jobs: dict[str, Any] = {
             "array": self.array(),
             "metrics": self.metrics(),
@@ -426,6 +434,9 @@ class UnraidClient:
         }
         if include_info:
             jobs["info"] = self.info()
+        if include_storage:
+            jobs["physical_disks"] = self.physical_disks()
+            jobs["shares"] = self.shares()
 
         results = await asyncio.gather(*jobs.values(), return_exceptions=True)
         snapshot = Snapshot()

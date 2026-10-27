@@ -46,6 +46,39 @@ def print_config(settings: Settings) -> None:
     print(f"   Usuarios:       {len(settings.allowed_user_ids)} autorizado(s)")
     print(f"   Solo lectura:   {'sí' if settings.read_only else 'no'}")
     print(f"   Alertas:        {'sí' if settings.alerts_enabled else 'no'}")
+    if settings.alerts_enabled:
+        print(
+            "   Umbrales:       "
+            f"disco {settings.disk_temp_warning}/{settings.disk_temp_critical}°C · "
+            f"CPU {settings.cpu_temp_warning}°C · RAM {settings.memory_warning}% · "
+            f"array {settings.array_usage_warning}% · shares {settings.share_usage_warning}%"
+        )
+        print(
+            f"   Paridad:        máximo {settings.parity_max_days} días · "
+            f"API offline: {'sí' if settings.api_offline_alert else 'no'}"
+        )
+    print(
+        "   Resumen diario: "
+        + (
+            f"{settings.digest_hour:02d}:{settings.digest_minute:02d}"
+            if settings.digest_enabled
+            else "desactivado"
+        )
+    )
+    print("   Servicios extra:")
+    for name, active in (
+        ("qBittorrent", settings.feature_qbittorrent),
+        ("MikroTik", settings.feature_mikrotik),
+        ("Wake-on-LAN", settings.feature_wol),
+        ("Proxy Telegram", settings.telegram_proxy_enabled),
+    ):
+        print(f"     {'✅' if active else '⚪'} {name}")
+    print(
+        f"   Limitador Telegram: {'sí' if settings.telegram_rate_limit else 'no'} · "
+        f"usuario {settings.user_rate_limit_actions}/{settings.user_rate_limit_window}s"
+    )
+    if settings.feature_wol:
+        print(f"   Equipos WOL:    {len(settings.wol_devices)}")
     print()
 
 

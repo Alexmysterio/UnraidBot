@@ -10,7 +10,25 @@ from telegram.ext import (
     filters,
 )
 
-from . import alerts, common, confirm, disks, docker, status, system, vms
+from .. import features
+from . import (
+    alerts,
+    common,
+    confirm,
+    digest,
+    disks,
+    docker,
+    history,
+    mikrotik,
+    perf,
+    qbittorrent,
+    search,
+    status,
+    system,
+    tools,
+    vms,
+    wol,
+)
 
 
 def register_handlers(application: Application) -> None:
@@ -21,13 +39,24 @@ def register_handlers(application: Application) -> None:
     application.add_handler(CommandHandler(["id"], common.cmd_id))
     application.add_handler(CommandHandler(["estado", "status"], status.show_status))
     application.add_handler(CommandHandler(["discos", "disks"], disks.show_disks))
-    application.add_handler(CommandHandler(["docker"], docker.show_list))
-    application.add_handler(CommandHandler(["vms", "vm"], vms.show_list))
+    application.add_handler(CommandHandler(["docker"], docker.cmd_docker))
+    application.add_handler(CommandHandler(["vms", "vm"], vms.cmd_vms))
     application.add_handler(CommandHandler(["sistema", "system"], system.show_system_menu))
     application.add_handler(CommandHandler(["alertas", "alerts"], alerts.show_alerts))
+    application.add_handler(CommandHandler(["buscar", "search"], search.cmd_search))
+    application.add_handler(CommandHandler(["historial", "history"], history.cmd_history))
+    application.add_handler(CommandHandler(["rendimiento", "perf"], perf.show_performance))
+    application.add_handler(CommandHandler(["resumen", "digest"], digest.cmd_digest))
 
     # Menú
     application.add_handler(CallbackQueryHandler(common.on_menu, pattern=r"^m:(main|help|noop)$"))
+    application.add_handler(CallbackQueryHandler(common.on_noop, pattern=r"^d:noop$"))
+    application.add_handler(CallbackQueryHandler(common.on_noop, pattern=r"^(q|h):noop$"))
+    application.add_handler(CallbackQueryHandler(common.on_noop, pattern=r"^(k:p|s:notif):noop$"))
+    application.add_handler(CallbackQueryHandler(common.on_noop, pattern=r"^(qb|mt|wol):noop$"))
+    application.add_handler(CallbackQueryHandler(common.show_language, pattern=r"^m:lang$"))
+    application.add_handler(CallbackQueryHandler(common.set_language_callback, pattern=r"^lang:set:(en|es|fr|it)$"))
+    application.add_handler(CallbackQueryHandler(tools.show_tools, pattern=r"^m:tools$"))
     application.add_handler(CallbackQueryHandler(status.show_status, pattern=r"^m:status$"))
     application.add_handler(CallbackQueryHandler(disks.show_disks, pattern=r"^m:disks$"))
     application.add_handler(CallbackQueryHandler(docker.show_list, pattern=r"^d:l:"))
@@ -35,10 +64,16 @@ def register_handlers(application: Application) -> None:
     application.add_handler(CallbackQueryHandler(vms.show_list, pattern=r"^m:vms$"))
     application.add_handler(CallbackQueryHandler(system.show_system_menu, pattern=r"^m:sys$"))
     application.add_handler(CallbackQueryHandler(alerts.show_alerts, pattern=r"^m:alerts$"))
+    application.add_handler(CallbackQueryHandler(search.on_search_menu, pattern=r"^m:search$"))
+    application.add_handler(CallbackQueryHandler(perf.show_performance, pattern=r"^m:perf$"))
+
+    # Búsqueda e historial
+    application.add_handler(CallbackQueryHandler(search.on_search_callback, pattern=r"^q:"))
+    application.add_handler(CallbackQueryHandler(history.on_history_callback, pattern=r"^h:"))
 
     # Discos
     application.add_handler(CallbackQueryHandler(disks.show_disk_detail, pattern=r"^k:v:"))
-    application.add_handler(CallbackQueryHandler(disks.show_physical_disks, pattern=r"^k:p$"))
+    application.add_handler(CallbackQueryHandler(disks.show_physical_disks, pattern=r"^k:p"))
 
     # Docker
     application.add_handler(CallbackQueryHandler(docker.show_detail, pattern=r"^d:v:"))
@@ -58,7 +93,7 @@ def register_handlers(application: Application) -> None:
     application.add_handler(CallbackQueryHandler(system.show_array, pattern=r"^s:array$"))
     application.add_handler(CallbackQueryHandler(system.show_parity, pattern=r"^s:parity$"))
     application.add_handler(CallbackQueryHandler(system.show_ups, pattern=r"^s:ups$"))
-    application.add_handler(CallbackQueryHandler(system.show_notifications, pattern=r"^s:notif$"))
+    application.add_handler(CallbackQueryHandler(system.show_notifications, pattern=r"^s:notif(:|$)"))
     application.add_handler(CallbackQueryHandler(system.notifications_action, pattern=r"^s:notifclear$"))
     application.add_handler(CallbackQueryHandler(system.show_shares, pattern=r"^s:shares$"))
     application.add_handler(CallbackQueryHandler(system.show_info, pattern=r"^s:info$"))
@@ -68,8 +103,42 @@ def register_handlers(application: Application) -> None:
     )
 
     # Alertas y confirmaciones
-    application.add_handler(CallbackQueryHandler(alerts.alerts_action, pattern=r"^a:(on|off|test)$"))
+    application.add_handler(
+        CallbackQueryHandler(alerts.alerts_action, pattern=r"^a:(on|off|test|mute:\d+|unmute)$")
+    )
     application.add_handler(CallbackQueryHandler(confirm.on_confirm, pattern=r"^c:[yn]:"))
+
+    # Herramientas opcionales
+    if features.is_enabled("qbittorrent"):
+        application.add_handler(CommandHandler(["qbittorrent", "qb"], qbittorrent.cmd_qbittorrent))
+        application.add_handler(CallbackQueryHandler(qbittorrent.show, pattern=r"^tool:qb$"))
+        application.add_handler(CallbackQueryHandler(qbittorrent.on_list, pattern=r"^qb:l:"))
+        application.add_handler(CallbackQueryHandler(qbittorrent.show_detail, pattern=r"^qb:d:"))
+        application.add_handler(CallbackQueryHandler(qbittorrent.toggle, pattern=r"^qb:t:"))
+        application.add_handler(CallbackQueryHandler(qbittorrent.ask_delete, pattern=r"^qb:x:"))
+        application.add_handler(CallbackQueryHandler(qbittorrent.arm_add, pattern=r"^qb:a$"))
+        application.add_handler(CallbackQueryHandler(qbittorrent.show_limits, pattern=r"^qb:lim$"))
+        application.add_handler(CallbackQueryHandler(qbittorrent.toggle_alt, pattern=r"^qb:alt$"))
+        application.add_handler(
+            CallbackQueryHandler(qbittorrent.show_categories, pattern=r"^qb:cat$")
+        )
+        application.add_handler(
+            CallbackQueryHandler(qbittorrent.action, pattern=r"^qb:all:(pause|resume)$")
+        )
+    if features.is_enabled("mikrotik"):
+        application.add_handler(CommandHandler(["mikrotik", "mt"], mikrotik.cmd_mikrotik))
+        application.add_handler(CallbackQueryHandler(mikrotik.show, pattern=r"^tool:mt$"))
+        application.add_handler(CallbackQueryHandler(mikrotik.on_interfaces, pattern=r"^mt:i:"))
+        application.add_handler(CallbackQueryHandler(mikrotik.on_leases, pattern=r"^mt:l:"))
+        application.add_handler(CallbackQueryHandler(mikrotik.on_routes, pattern=r"^mt:r:"))
+        application.add_handler(CallbackQueryHandler(mikrotik.on_firewall, pattern=r"^mt:f:"))
+        application.add_handler(CallbackQueryHandler(mikrotik.on_logs, pattern=r"^mt:g:"))
+        application.add_handler(CallbackQueryHandler(mikrotik.ask_reboot, pattern=r"^mt:reboot$"))
+    if features.is_enabled("wol"):
+        application.add_handler(CommandHandler(["wol", "encender"], wol.cmd_wol))
+        application.add_handler(CallbackQueryHandler(wol.show, pattern=r"^tool:wol$"))
+        application.add_handler(CallbackQueryHandler(wol.on_wake, pattern=r"^wol:w:"))
+        application.add_handler(CallbackQueryHandler(wol.wake_all, pattern=r"^wol:all$"))
 
     # Texto libre y comandos desconocidos
     application.add_handler(MessageHandler(filters.COMMAND, common.unknown_command))

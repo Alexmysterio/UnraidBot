@@ -11,8 +11,10 @@ from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 
 from ..formatting import esc
+from ..i18n import localize
 from ..keyboards import confirm_keyboard, docker_detail_keyboard, docker_list_keyboard, docker_logs_keyboard
 from ..security import resolve_short
+from ..search import find_named
 from ..unraid import UnraidError
 from ..views import (
     build_docker_detail,
@@ -58,7 +60,10 @@ async def show_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             page = int(query.data.split(":")[2])
         except (IndexError, ValueError):
             page = 0
+    await _render_list(update, context, page)
 
+
+async def _render_list(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0) -> None:
     client = context.bot_data["client"]
     containers = await client.docker_containers()
     items, page, pages = paginate(sort_containers(containers), page, PER_PAGE)
@@ -68,6 +73,113 @@ async def show_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         context,
         build_docker_list(containers, page, PER_PAGE),
         docker_list_keyboard(items, page, pages, update_count),
+    )
+
+
+COMMAND_ACTIONS = {"start", "stop", "restart", "pause", "unpause", "update", "logs"}
+USAGE = (
+    "🐳 <b>Uso de /docker</b>\n\n"
+    "/docker — lista de contenedores\n"
+    "/docker start|stop|restart|pause|unpause &lt;nombre&gt;\n"
+    "/docker update &lt;nombre&gt;\n"
+    "/docker logs &lt;nombre&gt;"
+)
+
+
+@authorized
+async def cmd_docker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    args = list(context.args or [])
+    if not args or args[0].lower() in {"list", "ls"}:
+        await _render_list(update, context, 0)
+        return
+
+    action = args[0].lower()
+    if action not in COMMAND_ACTIONS:
+        await notify(update, context, USAGE)
+        return
+    query = " ".join(args[1:]).strip()
+    if not query:
+        await notify(update, context, USAGE)
+        return
+
+    client = context.bot_data["client"]
+    containers = await client.docker_containers()
+    container, candidates = find_named(containers, query, keys=("names",))
+    if container is None:
+        if candidates:
+            names = ", ".join(_name(item) for item in candidates[:6])
+            await notify(update, context, f"Hay varias coincidencias: {names}. Sé más específico.")
+        else:
+            await notify(update, context, f"No encontré ningún contenedor llamado «{query}».")
+        return
+
+    name = _name(container)
+    if action == "logs":
+        try:
+            lines = await client.docker_logs(str(container["id"]), tail=40)
+        except UnraidError as exc:
+            await notify(update, context, f"❌ No se pudieron leer los logs: {exc}")
+            return
+        await render(
+            update,
+            context,
+            build_docker_detail(container, logs=lines),
+            docker_logs_keyboard(container, 0),
+        )
+        return
+
+    if _is_self(container, context) and action in {"stop", "restart", "pause", "update"}:
+        await notify(
+            update,
+            context,
+            "🛑 No puedo detener ni reiniciar el contenedor del propio bot. "
+            "Hazlo desde el WebGUI o con docker compose.",
+        )
+        return
+    if not await ensure_writable(update, context):
+        return
+
+    if action == "update":
+        manager = context.bot_data["confirmations"]
+        confirmation = manager.create(
+            user_id=update.effective_user.id if update.effective_user else 0,
+            chat_id=update.effective_chat.id if update.effective_chat else 0,
+            action="docker.update",
+            target=str(container["id"]),
+            args={"id": str(container["id"]), "name": name},
+            prompt=(
+                f"⬆️ <b>Actualizar {esc(name)}</b>\n\n"
+                "Se descargará la imagen más reciente y se recreará el contenedor. "
+                "Puede tardar varios minutos.\n\n¿Continuar?"
+            ),
+            success_text=f"✅ <b>Actualización de {esc(name)} completada</b>",
+            return_callback="m:docker",
+        )
+        await render(update, context, confirmation.prompt, confirm_keyboard(confirmation.token))
+        return
+
+    try:
+        await client.docker_action(action, str(container["id"]))
+    except UnraidError as exc:
+        await audit(update, context, f"docker.{action}", name, outcome="error")
+        await notify(update, context, f"❌ No se pudo aplicar «{action}»: {exc}")
+        return
+
+    await audit(update, context, f"docker.{action}", name)
+    await asyncio.sleep(0.7)
+    refreshed_list = await client.docker_containers()
+    refreshed = next(
+        (item for item in refreshed_list if str(item.get("id")) == str(container.get("id"))),
+        None,
+    )
+    if refreshed is None:
+        await _render_list(update, context, 0)
+        return
+    await render(
+        update,
+        context,
+        build_docker_detail(refreshed),
+        docker_detail_keyboard(refreshed, 0),
     )
 
 
@@ -162,7 +274,7 @@ async def container_action(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     await audit(update, context, f"docker.{action}", name)
     try:
-        await query.answer(f"{ACTION_LABELS[action]} {name}…")
+        await query.answer(localize(f"{ACTION_LABELS[action]} {name}…"))
     except TelegramError:
         pass
 
@@ -225,9 +337,9 @@ async def ask_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             "¿Continuar?"
         ),
         success_text=(
-            f"✅ <b>Actualización lanzada</b>\n\n"
+            "✅ <b>Actualización completada</b>\n\n"
             f"Contenedor: <b>{esc(name)}</b>\n"
-            "El proceso puede tardar unos minutos. Revisa la ficha para ver el estado."
+            "La imagen se ha descargado y el contenedor se ha recreado."
         ),
         return_callback=f"d:v:{token}:{page}",
     )
@@ -262,7 +374,7 @@ async def toggle_autostart(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     await audit(update, context, "docker.autostart", f"{name}={new_value}")
     try:
-        await query.answer(f"Autostart {'activado' if new_value else 'desactivado'}")
+        await query.answer(localize(f"Autostart {'activado' if new_value else 'desactivado'}"))
     except TelegramError:
         pass
 
@@ -311,8 +423,9 @@ async def ask_update_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             f"Puede tardar varios minutos.{warning}\n\n¿Continuar?"
         ),
         success_text=(
-            f"✅ <b>Actualización de {len(updates)} contenedores lanzada</b>\n\n"
-            "El proceso puede tardar varios minutos. Revisa la lista para ver el estado."
+            f"✅ <b>Actualización de {len(updates)} contenedores completada</b>\n\n"
+            "Las imágenes se han descargado y los contenedores se han recreado. "
+            "Revisa la lista para ver el estado final."
         ),
         return_callback="m:docker",
     )

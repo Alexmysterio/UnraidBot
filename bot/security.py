@@ -176,3 +176,57 @@ class AuditLog:
             self.path.rename(rotated)
         with self.path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    async def read(
+        self,
+        *,
+        limit: int = 10,
+        offset: int = 0,
+        query: str = "",
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Devuelve registros del más reciente al más antiguo y el total filtrado."""
+        async with self._lock:
+            return await asyncio.to_thread(self._read_sync, limit, offset, query)
+
+    def _read_sync(
+        self,
+        limit: int,
+        offset: int,
+        query: str,
+    ) -> tuple[list[dict[str, Any]], int]:
+        if not self.path.exists():
+            return [], 0
+        try:
+            raw = self.path.read_text(encoding="utf-8")
+        except OSError as exc:
+            LOG.warning("No se pudo leer la auditoría: %s", exc)
+            return [], 0
+
+        records: list[dict[str, Any]] = []
+        for line in raw.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                item = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(item, dict):
+                records.append(item)
+        records.reverse()
+
+        needle = query.strip().casefold()
+        if needle:
+            records = [
+                item
+                for item in records
+                if any(
+                    needle in str(item.get(key) or "").casefold()
+                    for key in ("action", "target", "username", "outcome", "user_id")
+                )
+            ]
+
+        total = len(records)
+        start = max(0, int(offset))
+        size = max(1, int(limit))
+        return records[start : start + size], total

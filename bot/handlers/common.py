@@ -13,10 +13,10 @@ from telegram.ext import ContextTypes
 
 from ..config import Settings
 from ..formatting import clamp, esc
-from ..keyboards import main_menu
+from ..i18n import DEFAULT_LANGUAGE, localize, localize_keyboard, set_language, t
+from ..keyboards import language_keyboard, main_menu
 from ..security import AuditLog, RateLimiter
 from ..unraid import UnraidError
-from ..views import build_help
 
 LOG = logging.getLogger(__name__)
 
@@ -26,6 +26,58 @@ Handler = Callable[[Update, ContextTypes.DEFAULT_TYPE], Awaitable[Any]]
 
 def get_settings(context: ContextTypes.DEFAULT_TYPE) -> Settings:
     return context.bot_data["settings"]
+
+
+def apply_language(context: ContextTypes.DEFAULT_TYPE, update: Update) -> str:
+    """Fija el idioma del chat en el contextvar de esta actualización."""
+    store = context.bot_data.get("store")
+    chat = update.effective_chat
+    language = store.get_language(chat.id) if store is not None and chat is not None else None
+    language = language or DEFAULT_LANGUAGE
+    set_language(language)
+    return language
+
+
+def _processing_key(update: Update) -> str:
+    """Clave única por mensaje de origen para no pisar actualizaciones concurrentes."""
+    query = update.callback_query
+    if query is not None and query.message is not None:
+        return f"{query.message.chat_id}:{query.message.message_id}"
+    message = update.effective_message
+    if message is not None:
+        return f"{message.chat_id}:{message.message_id}"
+    return f"update:{update.update_id}"
+
+
+def _pop_processing(update: Update, context: ContextTypes.DEFAULT_TYPE) -> dict | None:
+    store = context.chat_data.get("_processing")
+    if not isinstance(store, dict):
+        return None
+    marker = store.pop(_processing_key(update), None)
+    if not store:
+        context.chat_data.pop("_processing", None)
+    return marker if isinstance(marker, dict) else None
+
+
+async def begin_processing(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Muestra «Procesando…» mientras se consulta la API."""
+    text = t("processing")
+    query = update.callback_query
+    try:
+        if query is not None and query.message is not None:
+            await query.edit_message_text(text=text, parse_mode=HTML)
+            marker = {
+                "chat_id": query.message.chat_id,
+                "message_id": query.message.message_id,
+            }
+        elif update.effective_message is not None:
+            message = await update.effective_message.reply_text(text=text, parse_mode=HTML)
+            marker = {"chat_id": message.chat_id, "message_id": message.message_id}
+        else:
+            return
+        context.chat_data.setdefault("_processing", {})[_processing_key(update)] = marker
+    except TelegramError as exc:
+        LOG.debug("No se pudo mostrar el mensaje de proceso: %s", exc)
 
 
 def is_authorized(settings: Settings, update: Update) -> bool:
@@ -59,6 +111,18 @@ def is_writable(settings: Settings, user_id: int) -> bool:
 
 async def notify(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str) -> None:
     """Envía un aviso breve, como alerta si viene de un botón."""
+    text = localize(text)
+    marker = _pop_processing(update, context)
+    if marker is not None:
+        try:
+            await context.bot.edit_message_text(
+                chat_id=marker["chat_id"],
+                message_id=marker["message_id"],
+                text=text,
+                parse_mode=HTML,
+            )
+        except TelegramError:
+            pass
     query = update.callback_query
     if query is not None:
         try:
@@ -66,6 +130,8 @@ async def notify(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str) 
             return
         except TelegramError:
             pass
+    if marker is not None:
+        return
     if update.effective_message is not None:
         try:
             await update.effective_message.reply_text(text, parse_mode=HTML)
@@ -75,6 +141,7 @@ async def notify(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str) 
 
 async def deny(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     settings = get_settings(context)
+    apply_language(context, update)
     user = update.effective_user
     user_id = user.id if user else "desconocido"
     username = user.username if user else None
@@ -83,7 +150,7 @@ async def deny(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     if query is not None:
         try:
-            await query.answer("⛔ No autorizado", show_alert=True)
+            await query.answer(localize("⛔ No autorizado"), show_alert=True)
         except TelegramError:
             pass
         return
@@ -106,7 +173,7 @@ async def deny(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             "No está en <code>ALLOWED_USER_IDS</code> ni en <code>VIEWER_USER_IDS</code>."
         )
     try:
-        await update.effective_message.reply_text(text, parse_mode=HTML)
+        await update.effective_message.reply_text(localize(text), parse_mode=HTML)
     except TelegramError:
         pass
 
@@ -121,6 +188,7 @@ def authorized(handler: Handler) -> Handler:
             await deny(update, context)
             return None
 
+        apply_language(context, update)
         user = update.effective_user
         limiter: RateLimiter | None = context.bot_data.get("rate")
         if user is not None and limiter is not None and not limiter.allow(user.id):
@@ -132,7 +200,10 @@ def authorized(handler: Handler) -> Handler:
                 await update.callback_query.answer()
             except TelegramError:
                 pass
+            if update.callback_query.data.endswith(":noop"):
+                return await handler(update, context)
 
+        await begin_processing(update, context)
         return await handler(update, context)
 
     return wrapper
@@ -179,7 +250,27 @@ async def render(
     keyboard: InlineKeyboardMarkup | None = None,
 ) -> None:
     """Edita el mensaje del botón o envía uno nuevo, con fallback."""
-    text = clamp(text, 4000)
+    text = clamp(localize(text), 4000)
+    keyboard = localize_keyboard(keyboard)
+    marker = _pop_processing(update, context)
+    if marker is not None:
+        try:
+            await context.bot.edit_message_text(
+                chat_id=marker["chat_id"],
+                message_id=marker["message_id"],
+                text=text,
+                reply_markup=keyboard,
+                parse_mode=HTML,
+                disable_web_page_preview=True,
+            )
+            return
+        except BadRequest as exc:
+            if "message is not modified" in str(exc).lower():
+                return
+            LOG.debug("No se pudo editar el mensaje de proceso: %s", exc)
+        except TelegramError as exc:
+            LOG.debug("No se pudo editar el mensaje de proceso: %s", exc)
+
     query = update.callback_query
     if query is not None:
         try:
@@ -226,31 +317,38 @@ async def render(
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     settings = get_settings(context)
+    apply_language(context, update)
     if not is_authorized(settings, update):
         await deny(update, context)
         return
+    chat = update.effective_chat
+    store = context.bot_data["store"]
+    if chat is not None and store.get_language(chat.id) is None:
+        await render(update, context, t("lang_choose"), language_keyboard())
+        return
     user = update.effective_user
-    name = esc(user.first_name) if user and user.first_name else "hola"
-    text = (
-        f"👋 Hola, {name}.\n\n"
-        "Este bot administra tu servidor Unraid sin exponerlo a Internet: "
-        "todo el tráfico con Telegram es saliente y las órdenes van a la API local.\n\n"
-        "Elige una opción:"
-    )
-    await render(update, context, text, main_menu())
+    name = esc(user.first_name) if user and user.first_name else "👋"
+    await render(update, context, t("start_welcome", name=name), main_menu())
 
 
 @authorized
 async def cmd_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await render(update, context, "🏠 <b>Menú principal</b>", main_menu())
+    chat = update.effective_chat
+    store = context.bot_data["store"]
+    if chat is not None and store.get_language(chat.id) is None:
+        await render(update, context, t("lang_choose"), language_keyboard())
+        return
+    await render(update, context, "🏠 <b>" + t("Menú") + "</b>", main_menu())
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await render(update, context, build_help(), main_menu())
+    apply_language(context, update)
+    await render(update, context, t("help"), main_menu())
 
 
 async def cmd_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     settings = get_settings(context)
+    apply_language(context, update)
     user = update.effective_user
     chat = update.effective_chat
     if user is None or chat is None:
@@ -277,16 +375,51 @@ async def cmd_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 @authorized
+async def show_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await render(update, context, t("lang_choose"), language_keyboard())
+
+
+@authorized
+async def set_language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if query is None or update.effective_chat is None:
+        return
+    parts = query.data.split(":")
+    code = parts[2] if len(parts) > 2 else DEFAULT_LANGUAGE
+    store = context.bot_data["store"]
+    if code not in {"en", "es", "fr", "it"}:
+        await notify(update, context, "Idioma no válido.")
+        return
+    await store.set_language(update.effective_chat.id, code)
+    set_language(code)
+    await audit(update, context, "language.set", code)
+    user = update.effective_user
+    name = esc(user.first_name) if user and user.first_name else "👋"
+    await render(update, context, t("language_saved") + "\n\n" + t("start_welcome", name=name), main_menu())
+
+
+@authorized
 async def on_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     if query is None:
         return
     if query.data == "m:main":
-        await render(update, context, "🏠 <b>Menú principal</b>", main_menu())
+        chat = update.effective_chat
+        store = context.bot_data["store"]
+        if chat is not None and store.get_language(chat.id) is None:
+            await render(update, context, t("lang_choose"), language_keyboard())
+            return
+        await render(update, context, "🏠 <b>" + t("Menú") + "</b>", main_menu())
     elif query.data == "m:help":
-        await render(update, context, build_help(), main_menu())
+        await render(update, context, t("help"), main_menu())
     elif query.data == "m:noop":
         return
+
+
+@authorized
+async def on_noop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Botón decorativo (p. ej. el contador de páginas): no hace nada."""
+    return None
 
 
 @authorized
@@ -301,6 +434,15 @@ async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 @authorized
 async def fallback_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Texto libre: primero busca o filtra, si no hay captura muestra el menú."""
+    from . import history, qbittorrent, search
+
+    if await qbittorrent.consume_text(update, context):
+        return
+    if await search.consume_text(update, context):
+        return
+    if await history.consume_text(update, context):
+        return
     await render(update, context, "🏠 <b>Menú principal</b>", main_menu())
 
 
@@ -309,6 +451,7 @@ async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     LOG.error("Error no controlado: %s", error, exc_info=error)
     if not isinstance(update, Update):
         return
+    apply_language(context, update)
     if isinstance(error, UnraidError):
         text = f"❌ {error}"
     else:

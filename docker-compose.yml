@@ -13,6 +13,12 @@ services:
       PUID: ${PUID:-99}
       PGID: ${PGID:-100}
       TZ: ${TZ:-Europe/Madrid}
+      # Servicios extra activables con "active"/"noactive".
+      # Las credenciales y URLs se leen de .env.
+      SERVICE_QBITTORRENT: ${SERVICE_QBITTORRENT:-noactive}
+      SERVICE_MIKROTIK: ${SERVICE_MIKROTIK:-noactive}
+      SERVICE_WOL: ${SERVICE_WOL:-noactive}
+      SERVICE_TELEGRAM_PROXY: ${SERVICE_TELEGRAM_PROXY:-noactive}
 
     volumes:
       - ./data:/data

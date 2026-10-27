@@ -14,8 +14,10 @@ from ..keyboards import (
 )
 from ..security import resolve_short
 from ..unraid import Snapshot
-from ..views import build_disk_detail, build_disks, build_physical_disks
+from ..views import build_disk_detail, build_disks, build_physical_disks, paginate
 from .common import authorized, get_settings, notify, render
+
+PER_PAGE = 10
 
 
 def _all_disks(array: dict[str, Any]) -> list[dict[str, Any]]:
@@ -59,6 +61,18 @@ async def show_disk_detail(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 @authorized
 async def show_physical_disks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    page = 0
+    query = update.callback_query
+    if query is not None and query.data.startswith("k:p:"):
+        part = query.data.split(":")[2]
+        if part.isdigit():
+            page = int(part)
     client = context.bot_data["client"]
     disks = await client.physical_disks()
-    await render(update, context, build_physical_disks(disks), physical_disks_keyboard())
+    _, page, pages = paginate(disks, page, PER_PAGE)
+    await render(
+        update,
+        context,
+        build_physical_disks(disks, page, PER_PAGE),
+        physical_disks_keyboard(page, pages),
+    )

@@ -7,6 +7,7 @@ from telegram.ext import ContextTypes
 
 from ..health import detect_problems
 from ..keyboards import refresh_menu
+from ..metrics import record_metric
 from ..views import build_status
 from .common import authorized, get_settings, render
 
@@ -15,7 +16,8 @@ from .common import authorized, get_settings, render
 async def show_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     settings = get_settings(context)
     client = context.bot_data["client"]
-    snapshot = await client.snapshot()
+    snapshot = await client.snapshot(include_storage=True)
+    await record_metric(context, snapshot)
     problems = detect_problems(snapshot, settings)
     await render(
         update,
