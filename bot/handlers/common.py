@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from functools import wraps
 from typing import Any, Awaitable, Callable
 
@@ -14,9 +15,9 @@ from telegram.ext import ContextTypes
 from ..config import Settings
 from ..formatting import clamp, esc
 from ..i18n import DEFAULT_LANGUAGE, localize, localize_keyboard, set_language, t
-from ..keyboards import language_keyboard, main_menu
+from ..keyboards import back_menu, language_keyboard, main_menu
 from ..security import AuditLog, RateLimiter
-from ..unraid import UnraidError
+from ..unraid import UnraidError, UnraidPermissionError
 
 LOG = logging.getLogger(__name__)
 
@@ -109,7 +110,31 @@ def is_writable(settings: Settings, user_id: int) -> bool:
     return user_id in settings.allowed_user_ids
 
 
-async def notify(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str) -> None:
+def _plain(text: str) -> str:
+    """Quita el marcado HTML para las alertas emergentes de Telegram."""
+    return re.sub(r"<[^>]+>", "", text).replace("&amp;", "&")
+
+
+def failure_text(exc: Exception) -> str:
+    """Texto de error homogéneo; añade una pista si la clave no tiene permisos."""
+    detail = f"<code>{esc(str(exc))}</code>"
+    if isinstance(exc, UnraidPermissionError):
+        return (
+            "🔒 <b>La API key de Unraid no permite esta operación</b>\n\n"
+            "Necesita permisos de escritura. Revisa "
+            "<i>Settings → Management Access → API Keys</i> y usa una clave "
+            "con rol de administrador.\n\n"
+            f"{detail}"
+        )
+    return f"❌ <b>No se pudo completar la operación</b>\n\n{detail}"
+
+
+async def notify(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    text: str,
+    keyboard: InlineKeyboardMarkup | None = None,
+) -> None:
     """Envía un aviso breve, como alerta si viene de un botón."""
     text = localize(text)
     marker = _pop_processing(update, context)
@@ -120,13 +145,14 @@ async def notify(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str) 
                 message_id=marker["message_id"],
                 text=text,
                 parse_mode=HTML,
+                reply_markup=localize_keyboard(keyboard or back_menu("m:main")),
             )
         except TelegramError:
             pass
     query = update.callback_query
     if query is not None:
         try:
-            await query.answer(text[:190], show_alert=True)
+            await query.answer(_plain(text)[:190], show_alert=True)
             return
         except TelegramError:
             pass
@@ -453,7 +479,19 @@ async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     apply_language(context, update)
     if isinstance(error, UnraidError):
-        text = f"❌ {error}"
+        text = (
+            failure_text(error)
+            if isinstance(error, UnraidPermissionError)
+            else f"❌ <b>Error de Unraid</b>\n\n<code>{esc(str(error))}</code>"
+        )
+    elif isinstance(error, TelegramError):
+        text = "❌ <b>Telegram rechazó la operación</b>\n\n<code>" + esc(str(error)) + "</code>"
     else:
-        text = "❌ Ha ocurrido un error inesperado. Revisa los logs del contenedor."
-    await notify(update, context, text)
+        text = (
+            "❌ <b>Ha ocurrido un error inesperado</b>\n\n"
+            "Revisa los logs del contenedor."
+        )
+    try:
+        await render(update, context, text, back_menu("m:main"))
+    except Exception:  # noqa: BLE001 - el manejador de errores nunca debe fallar
+        LOG.exception("No se pudo informar del error al usuario")

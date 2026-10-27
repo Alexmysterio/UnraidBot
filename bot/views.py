@@ -647,9 +647,13 @@ def build_parity(snapshot: Snapshot, settings: Settings) -> str:
     return "\n".join(lines)
 
 
-def build_ups(snapshot: Snapshot) -> str:
+def build_ups(snapshot: Snapshot, problem: str | None = None) -> str:
     lines = ["🔋 <b>UPS</b>", ""]
     if not snapshot.ups:
+        if problem:
+            lines.append("⚠️ No se pudo consultar el estado del UPS.")
+            lines.append(f"<code>{esc(problem)}</code>")
+            lines.append("")
         lines.append("No hay ningún UPS configurado o visible para la API.")
         lines.append("Puedes configurarlo en <i>Settings → UPS Settings</i>.")
         return "\n".join(lines)

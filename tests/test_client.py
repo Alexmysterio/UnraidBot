@@ -6,7 +6,13 @@ import httpx
 import pytest
 
 from bot.config import Settings
-from bot.unraid import Snapshot, UnraidClient, UnraidError, normalize_api_url
+from bot.unraid import (
+    Snapshot,
+    UnraidClient,
+    UnraidError,
+    UnraidPermissionError,
+    normalize_api_url,
+)
 
 
 def _client(settings: Settings, handler) -> UnraidClient:
@@ -67,8 +73,43 @@ async def test_unauthorized_message(settings: Settings) -> None:
 
     client = _client(settings, handler)
     try:
-        with pytest.raises(UnraidError, match="rechazó la clave"):
+        with pytest.raises(UnraidPermissionError, match="rechazó la clave"):
             await client.array()
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_graphql_permission_error_is_classified(settings: Settings) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"errors": [{"message": "Unauthorized: API key is read-only"}]},
+            request=request,
+        )
+
+    client = _client(settings, handler)
+    try:
+        with pytest.raises(UnraidPermissionError, match="read-only"):
+            await client.archive_all_notifications()
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_graphql_non_permission_error_stays_generic(settings: Settings) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"errors": [{"message": "Field 'foo' does not exist"}]},
+            request=request,
+        )
+
+    client = _client(settings, handler)
+    try:
+        with pytest.raises(UnraidError) as excinfo:
+            await client.array()
+        assert not isinstance(excinfo.value, UnraidPermissionError)
     finally:
         await client.close()
 

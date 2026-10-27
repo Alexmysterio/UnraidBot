@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from telegram import Update
 from telegram.error import TelegramError
@@ -17,7 +18,7 @@ from ..keyboards import (
     system_keyboard,
 )
 from ..i18n import localize
-from ..unraid import Snapshot
+from ..unraid import Snapshot, UnraidError
 from ..views import (
     build_array,
     build_info,
@@ -30,7 +31,24 @@ from ..views import (
 )
 from .common import audit, authorized, ensure_writable, get_settings, notify, render
 
+LOG = logging.getLogger(__name__)
+
 PER_PAGE = 5
+
+# Mensajes con los que la API avisa de que no hay ningún UPS que leer.
+_MISSING_UPS_HINTS = (
+    "apcaccess",
+    "no ups",
+    "ups data",
+    "not configured",
+    "sin datos",
+)
+
+
+def _ups_missing(exc: UnraidError) -> bool:
+    """True si el error solo significa «este servidor no tiene UPS»."""
+    message = str(exc).lower()
+    return any(hint in message for hint in _MISSING_UPS_HINTS)
 
 
 @authorized
@@ -72,8 +90,20 @@ async def show_parity(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 @authorized
 async def show_ups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     client = context.bot_data["client"]
-    snapshot = Snapshot(ups=await client.ups())
-    await render(update, context, build_ups(snapshot), simple_back_keyboard("s:ups"))
+    try:
+        devices = await client.ups()
+    except UnraidError as exc:
+        LOG.info("No se pudo leer el UPS: %s", exc)
+        await render(
+            update,
+            context,
+            build_ups(Snapshot(ups=[]), problem=None if _ups_missing(exc) else str(exc)),
+            simple_back_keyboard("s:ups"),
+        )
+        return
+    await render(
+        update, context, build_ups(Snapshot(ups=devices)), simple_back_keyboard("s:ups")
+    )
 
 
 @authorized

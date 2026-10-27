@@ -133,6 +133,18 @@ REQUIRED_STRINGS_V15 = (
     "⚡ Magic packet enviado a ",
 )
 
+# Cadenas introducidas en 1.5.2: errores que no deben romper la navegación.
+REQUIRED_STRINGS_V152 = (
+    "🔒 <b>La API key de Unraid no permite esta operación</b>",
+    "Necesita permisos de escritura: revisa <i>Settings → Management Access → API Keys</i> "
+    "y usa una clave con rol de administrador.",
+    "⚠️ No se pudo consultar el estado del UPS.",
+    "❌ <b>Error de Unraid</b>",
+    "❌ <b>Telegram rechazó la operación</b>",
+    "❌ <b>Ha ocurrido un error inesperado</b>",
+    "Revisa los logs del contenedor.",
+)
+
 
 def test_catalogs_share_the_same_keys() -> None:
     reference = set(CATALOG["en"])
@@ -152,7 +164,7 @@ def test_extra_translations_are_complete() -> None:
 @pytest.mark.parametrize("language", LANGUAGES)
 def test_release_strings_are_translated(language: str) -> None:
     catalog = CATALOG[language]
-    for source in REQUIRED_STRINGS + REQUIRED_STRINGS_V14 + REQUIRED_STRINGS_V15:
+    for source in REQUIRED_STRINGS + REQUIRED_STRINGS_V14 + REQUIRED_STRINGS_V15 + REQUIRED_STRINGS_V152:
         assert source in catalog, f"Falta {source!r} en {language}"
         assert catalog[source].strip(), f"Traducción vacía de {source!r} en {language}"
 
@@ -160,7 +172,7 @@ def test_release_strings_are_translated(language: str) -> None:
 @pytest.mark.parametrize("language", LANGUAGES)
 def test_localize_uses_release_strings(language: str) -> None:
     set_language(language)
-    for source in REQUIRED_STRINGS + REQUIRED_STRINGS_V14 + REQUIRED_STRINGS_V15:
+    for source in REQUIRED_STRINGS + REQUIRED_STRINGS_V14 + REQUIRED_STRINGS_V15 + REQUIRED_STRINGS_V152:
         translated = localize(source)
         assert translated == CATALOG[language][source]
         if language != "es":
@@ -169,7 +181,7 @@ def test_localize_uses_release_strings(language: str) -> None:
 
 def test_spanish_remains_untranslated() -> None:
     set_language("es")
-    for source in REQUIRED_STRINGS + REQUIRED_STRINGS_V14 + REQUIRED_STRINGS_V15:
+    for source in REQUIRED_STRINGS + REQUIRED_STRINGS_V14 + REQUIRED_STRINGS_V15 + REQUIRED_STRINGS_V152:
         assert localize(source) == source
 
 

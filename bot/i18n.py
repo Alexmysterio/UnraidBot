@@ -1114,6 +1114,20 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         ),
         "🗑 <b>Borrar ": "🗑 <b>Delete ",
         "⚡ Magic packet enviado a ": "⚡ Magic packet sent to ",
+        # 1.5.2 · errores que no deben dejar al usuario sin navegación.
+        "🔒 <b>La API key de Unraid no permite esta operación</b>": (
+            "🔒 <b>The Unraid API key does not allow this operation</b>"
+        ),
+        "Necesita permisos de escritura: revisa <i>Settings → Management Access → API Keys</i> "
+        "y usa una clave con rol de administrador.": (
+            "It needs write permissions: check <i>Settings → Management Access → API Keys</i> "
+            "and use a key with the administrator role."
+        ),
+        "⚠️ No se pudo consultar el estado del UPS.": "⚠️ Could not read the UPS status.",
+        "❌ <b>Error de Unraid</b>": "❌ <b>Unraid error</b>",
+        "❌ <b>Telegram rechazó la operación</b>": "❌ <b>Telegram rejected the operation</b>",
+        "❌ <b>Ha ocurrido un error inesperado</b>": "❌ <b>An unexpected error occurred</b>",
+        "Revisa los logs del contenedor.": "Check the container logs.",
     },
     "fr": {
         "Array casi lleno": "Array presque plein",
@@ -1405,6 +1419,27 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         ),
         "🗑 <b>Borrar ": "🗑 <b>Supprimer ",
         "⚡ Magic packet enviado a ": "⚡ Magic packet envoyé à ",
+        # 1.5.2 · erreurs qui ne doivent pas laisser l'utilisateur sans navigation.
+        "🔒 <b>La API key de Unraid no permite esta operación</b>": (
+            "🔒 <b>La clé API d'Unraid n'autorise pas cette opération</b>"
+        ),
+        "Necesita permisos de escritura: revisa <i>Settings → Management Access → API Keys</i> "
+        "y usa una clave con rol de administrador.": (
+            "Elle exige des droits d'écriture : vérifiez "
+            "<i>Settings → Management Access → API Keys</i> et utilisez une clé "
+            "avec le rôle administrateur."
+        ),
+        "⚠️ No se pudo consultar el estado del UPS.": (
+            "⚠️ Impossible de lire l'état de l'onduleur."
+        ),
+        "❌ <b>Error de Unraid</b>": "❌ <b>Erreur d'Unraid</b>",
+        "❌ <b>Telegram rechazó la operación</b>": (
+            "❌ <b>Telegram a refusé l'opération</b>"
+        ),
+        "❌ <b>Ha ocurrido un error inesperado</b>": (
+            "❌ <b>Une erreur inattendue s'est produite</b>"
+        ),
+        "Revisa los logs del contenedor.": "Consultez les journaux du conteneur.",
     },
     "it": {
         "Array casi lleno": "Array quasi pieno",
@@ -1696,6 +1731,27 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         ),
         "🗑 <b>Borrar ": "🗑 <b>Elimina ",
         "⚡ Magic packet enviado a ": "⚡ Magic packet inviato a ",
+        # 1.5.2 · errori che non devono lasciare l'utente senza navigazione.
+        "🔒 <b>La API key de Unraid no permite esta operación</b>": (
+            "🔒 <b>La chiave API di Unraid non consente questa operazione</b>"
+        ),
+        "Necesita permisos de escritura: revisa <i>Settings → Management Access → API Keys</i> "
+        "y usa una clave con rol de administrador.": (
+            "Richiede permessi di scrittura: controlla "
+            "<i>Settings → Management Access → API Keys</i> e usa una chiave "
+            "con ruolo amministratore."
+        ),
+        "⚠️ No se pudo consultar el estado del UPS.": (
+            "⚠️ Impossibile leggere lo stato dell'UPS."
+        ),
+        "❌ <b>Error de Unraid</b>": "❌ <b>Errore di Unraid</b>",
+        "❌ <b>Telegram rechazó la operación</b>": (
+            "❌ <b>Telegram ha rifiutato l'operazione</b>"
+        ),
+        "❌ <b>Ha ocurrido un error inesperado</b>": (
+            "❌ <b>Si è verificato un errore imprevisto</b>"
+        ),
+        "Revisa los logs del contenedor.": "Controlla i log del container.",
     },
 }
 

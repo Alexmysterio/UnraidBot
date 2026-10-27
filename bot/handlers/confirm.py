@@ -19,9 +19,14 @@ from ..services import ServiceError
 from ..services.mikrotik import MikroTik
 from ..services.qbittorrent import QBittorrent
 from ..unraid import UnraidError
-from .common import audit, authorized, ensure_writable, notify, render
+from .common import audit, authorized, ensure_writable, failure_text, notify, render
 
 LOG = logging.getLogger(__name__)
+
+
+def _return_keyboard(item: Confirmation):
+    """Teclado de vuelta; nunca deja al usuario sin navegación."""
+    return back_menu(item.return_callback or "m:main")
 
 LONG_ACTIONS = {
     "docker.update",
@@ -136,7 +141,7 @@ async def run_long_operation(
     """Ejecuta una operación larga y va editando el mensaje con el progreso."""
     set_language(language)
     title = LONG_TITLES.get(item.action, item.action)
-    keyboard = back_menu(item.return_callback)
+    keyboard = _return_keyboard(item)
     started = time.monotonic()
     await _edit(
         context,
@@ -170,11 +175,7 @@ async def run_long_operation(
             context,
             chat_id,
             message_id,
-            (
-                f"❌ <b>No se pudo completar la operación</b>\n\n"
-                f"<code>{esc(str(exc))}</code>\n\n"
-                f"Duración: {fmt_elapsed(elapsed)}"
-            ),
+            f"{failure_text(exc)}\n\nDuración: {fmt_elapsed(elapsed)}",
             keyboard,
         )
     except asyncio.CancelledError:
@@ -221,7 +222,7 @@ async def on_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     if decision != "y":
         await audit(update, context, f"{item.action}.cancel", item.target)
-        await render(update, context, "❌ <b>Operación cancelada.</b>", back_menu(item.return_callback))
+        await render(update, context, "❌ <b>Operación cancelada.</b>", _return_keyboard(item))
         return
 
     if not await ensure_writable(update, context):
@@ -233,7 +234,7 @@ async def on_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             update,
             context,
             f"⏳ <b>{title}</b>\n\nOperación en curso… 0 s",
-            back_menu(item.return_callback),
+            _return_keyboard(item),
         )
         task = asyncio.create_task(
             run_long_operation(
@@ -259,10 +260,10 @@ async def on_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await render(
             update,
             context,
-            f"❌ <b>No se pudo completar la operación</b>\n\n<code>{esc(str(exc))}</code>",
-            back_menu(item.return_callback),
+            failure_text(exc),
+            _return_keyboard(item),
         )
         return
 
     await audit(update, context, item.action, item.target)
-    await render(update, context, item.success_text, back_menu(item.return_callback))
+    await render(update, context, item.success_text, _return_keyboard(item))

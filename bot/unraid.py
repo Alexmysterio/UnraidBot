@@ -27,6 +27,29 @@ class UnraidConnectionError(UnraidError):
     """No se pudo contactar con la API."""
 
 
+class UnraidPermissionError(UnraidError):
+    """La clave de API no tiene permisos para la operación solicitada."""
+
+
+_PERMISSION_HINTS = (
+    "unauthorized",
+    "forbidden",
+    "not authorized",
+    "permission",
+    "access denied",
+    "insufficient",
+    "read-only",
+    "read only",
+    "not allowed",
+    "requires write",
+)
+
+
+def _looks_like_permission_error(message: str) -> bool:
+    lowered = message.lower()
+    return any(hint in lowered for hint in _PERMISSION_HINTS)
+
+
 # ---------------------------------------------------------------------------
 # Consultas
 # ---------------------------------------------------------------------------
@@ -331,7 +354,7 @@ class UnraidClient:
                 ) from exc
 
             if response.status_code in (401, 403):
-                raise UnraidError(
+                raise UnraidPermissionError(
                     f"La API de Unraid rechazó la clave (HTTP {response.status_code}). "
                     "Comprueba UNRAID_API_KEY y que tenga permisos de administración."
                 )
@@ -347,7 +370,10 @@ class UnraidClient:
                 for item in body["errors"][:3]:
                     if isinstance(item, dict):
                         messages.append(str(item.get("message") or "error"))
-                raise UnraidError("; ".join(messages) or "Error GraphQL desconocido")
+                detail = "; ".join(messages) or "Error GraphQL desconocido"
+                if _looks_like_permission_error(detail):
+                    raise UnraidPermissionError(detail)
+                raise UnraidError(detail)
 
             if response.status_code >= 500:
                 last_error = UnraidError(f"La API de Unraid devolvió HTTP {response.status_code}.")

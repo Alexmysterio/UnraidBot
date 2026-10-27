@@ -4,6 +4,19 @@ Todas las novedades relevantes de este proyecto se documentan aquí. El formato
 sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto
 usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [1.5.2] - 2026-10-27
+
+### Corregido
+
+- La pantalla **UPS** ya no muestra un error cuando el servidor no tiene UPS: informa, explica cómo configurarlo y mantiene los botones para volver.
+- Un error inesperado ya no deja el mensaje en «Procesando…» sin botones: el manejador global responde con el detalle y un teclado de vuelta al menú.
+- Al archivar notificaciones con una API key de solo lectura se explica el motivo y se mantiene la navegación a Notificaciones.
+- Los avisos que sustituyen el mensaje de proceso conservan siempre un teclado de vuelta.
+
+### Añadido
+
+- Detección específica de errores de permisos de la API (`UnraidPermissionError`), con un mensaje claro y el detalle original para diagnosticar.
+
 ## [1.5.1] - 2026-10-27
 
 ### Seguridad
