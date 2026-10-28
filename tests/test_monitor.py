@@ -24,7 +24,10 @@ class FakeClient:
         self.snapshot_data = snapshot
 
     async def snapshot(
-        self, include_info: bool = True, include_storage: bool = False
+        self,
+        include_info: bool = True,
+        include_storage: bool = False,
+        include_health: bool = False,
     ) -> Snapshot:
         return self.snapshot_data
 

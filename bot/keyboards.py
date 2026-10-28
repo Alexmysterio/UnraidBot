@@ -96,8 +96,16 @@ def disk_detail_keyboard() -> Keyboard:
     )
 
 
-def physical_disks_keyboard(page: int = 0, pages: int = 1) -> Keyboard:
+def physical_disks_keyboard(
+    disks: list[dict[str, Any]] | None = None, page: int = 0, pages: int = 1
+) -> Keyboard:
     rows: list[list[Button]] = []
+    for disk in disks or []:
+        name = disk.get("name") or disk.get("device") or "disco"
+        token = short_id(str(disk.get("id") or name))
+        rows.append(
+            [Button(f"🔍 {shorten(str(name), 26)}", callback_data=f"s:smart:{token}")]
+        )
     if pages > 1:
         rows.append(
             [
@@ -131,8 +139,27 @@ def docker_list_keyboard(
         nav.append(Button(f"{page + 1}/{total_pages}", callback_data="d:noop"))
         nav.append(Button("▶️", callback_data=f"d:l:{min(total_pages - 1, page + 1)}"))
         rows.append(nav)
+    rows.append([Button("🧹 Mantenimiento", callback_data="d:maint"), Button("📦 Tamaños", callback_data="d:sizes")])
     rows.append([Button("🔄 Actualizar", callback_data=f"d:l:{page}"), Button("🏠 Menú", callback_data="m:main")])
     return Keyboard(rows)
+
+
+def docker_maintenance_keyboard() -> Keyboard:
+    return Keyboard(
+        [
+            [Button("📦 Tamaños", callback_data="d:sizes"), Button("🔄 Actualizar", callback_data="d:maint")],
+            [Button("🐳 Docker", callback_data="d:l:0"), Button("🏠 Menú", callback_data="m:main")],
+        ]
+    )
+
+
+def docker_sizes_keyboard() -> Keyboard:
+    return Keyboard(
+        [
+            [Button("🧹 Mantenimiento", callback_data="d:maint"), Button("🔄 Actualizar", callback_data="d:sizes")],
+            [Button("🐳 Docker", callback_data="d:l:0"), Button("🏠 Menú", callback_data="m:main")],
+        ]
+    )
 
 
 def docker_detail_keyboard(container: dict[str, Any], page: int = 0) -> Keyboard:
@@ -249,6 +276,11 @@ def system_keyboard() -> Keyboard:
             [Button("🧱 Array", callback_data="s:array"), Button("🧮 Paridad", callback_data="s:parity")],
             [Button("🔋 UPS", callback_data="s:ups"), Button("🔔 Notificaciones", callback_data="s:notif")],
             [Button("📚 Shares", callback_data="s:shares"), Button("ℹ️ Información", callback_data="s:info")],
+            [Button("🕓 Historial paridad", callback_data="s:ph"), Button("🪪 Licencia", callback_data="s:license")],
+            [Button("🔌 Plugins", callback_data="s:plugins"), Button("🧩 Servicios", callback_data="s:services")],
+            [Button("🌐 Red", callback_data="s:network"), Button("📜 Logs", callback_data="s:logs")],
+            [Button("🌡️ Temperaturas", callback_data="s:temp"), Button("🔑 Claves API", callback_data="s:keys")],
+            [Button("🏷️ Identidad", callback_data="s:identity"), Button("🩺 Diagnóstico", callback_data="s:diag")],
             [Button("🔄 Actualizar", callback_data="m:sys"), Button("🏠 Menú", callback_data="m:main")],
         ]
     )
@@ -260,6 +292,7 @@ def array_keyboard(state: str | None) -> Keyboard:
         rows.append([Button("⏹ Detener array", callback_data="s:astop")])
     else:
         rows.append([Button("▶️ Iniciar array", callback_data="s:astart")])
+        rows.append([Button("🔐 Iniciar array cifrado", callback_data="s:astart:enc")])
     rows.append([Button("🧮 Paridad", callback_data="s:parity"), Button("🔄 Actualizar", callback_data="s:array")])
     rows.append([Button("⚙️ Sistema", callback_data="m:sys"), Button("🏠 Menú", callback_data="m:main")])
     return Keyboard(rows)
@@ -306,6 +339,297 @@ def notifications_keyboard(page: int = 0, pages: int = 1) -> Keyboard:
         ]
     )
     rows.append([Button("🏠 Menú", callback_data="m:main")])
+    return Keyboard(rows)
+
+
+# ---------------------------------------------------------------------------
+# 1.6.0 · pantallas ampliadas del sistema
+# ---------------------------------------------------------------------------
+
+def parity_history_keyboard(page: int = 0, pages: int = 1) -> Keyboard:
+    rows: list[list[Button]] = []
+    if pages > 1:
+        rows.append(
+            [
+                Button("◀️", callback_data=f"s:ph:{max(0, page - 1)}"),
+                Button(f"{page + 1}/{pages}", callback_data="s:ph:noop"),
+                Button("▶️", callback_data=f"s:ph:{min(pages - 1, page + 1)}"),
+            ]
+        )
+    rows.append([Button("🧮 Paridad actual", callback_data="s:parity")])
+    rows.append(
+        [Button("🔄 Actualizar", callback_data=f"s:ph:{page}"), Button("🔙 Sistema", callback_data="m:sys")]
+    )
+    rows.append([Button("🏠 Menú", callback_data="m:main")])
+    return Keyboard(rows)
+
+
+def parity_choice_keyboard() -> Keyboard:
+    return Keyboard(
+        [
+            [Button("✅ Correctiva (escribe)", callback_data="s:pc:1")],
+            [Button("👁️ No correctiva (solo lee)", callback_data="s:pc:0")],
+            [Button("🔙 Paridad", callback_data="s:parity"), Button("🏠 Menú", callback_data="m:main")],
+        ]
+    )
+
+
+def notifications_list_keyboard(
+    items: list[dict[str, Any]],
+    *,
+    page: int = 0,
+    pages: int = 1,
+    archived: bool = False,
+    importance: str | None = None,
+) -> Keyboard:
+    rows: list[list[Button]] = []
+    for item in items:
+        token = short_id(str(item.get("id") or item.get("title") or ""))
+        emoji = {"ALERT": "🔴", "WARNING": "🟠", "INFO": "🔵"}.get(
+            str(item.get("importance") or "").upper(), "•"
+        )
+        label = f"{emoji} {shorten(str(item.get('subject') or item.get('title') or 'Notificación'), 26)}"
+        rows.append([Button(label, callback_data=f"s:notif:d:{token}")])
+
+    if pages > 1:
+        suffix = f":{importance or 'all'}:{'1' if archived else '0'}"
+        rows.append(
+            [
+                Button("◀️", callback_data=f"s:notif:p:{max(0, page - 1)}{suffix}"),
+                Button(f"{page + 1}/{pages}", callback_data="s:notif:noop"),
+                Button("▶️", callback_data=f"s:notif:p:{min(pages - 1, page + 1)}{suffix}"),
+            ]
+        )
+
+    if archived:
+        rows.append([Button("📥 Ver sin leer", callback_data="s:notif:f:all:0")])
+    else:
+        rows.append([Button("🗂 Ver archivadas", callback_data="s:notif:f:all:1")])
+    rows.append(
+        [
+            Button("🔴 Alertas", callback_data=f"s:notif:f:ALERT:{'1' if archived else '0'}"),
+            Button("🟠 Avisos", callback_data=f"s:notif:f:WARNING:{'1' if archived else '0'}"),
+        ]
+    )
+    rows.append(
+        [
+            Button("🔵 Info", callback_data=f"s:notif:f:INFO:{'1' if archived else '0'}"),
+            Button("📋 Todas", callback_data=f"s:notif:f:all:{'1' if archived else '0'}"),
+        ]
+    )
+    rows.append([Button("🗑 Archivar todas", callback_data="s:notifclear")])
+    rows.append(
+        [
+            Button("🔄 Actualizar", callback_data="s:notif:0"),
+            Button("🔙 Sistema", callback_data="m:sys"),
+        ]
+    )
+    rows.append([Button("🏠 Menú", callback_data="m:main")])
+    return Keyboard(rows)
+
+
+def notification_detail_keyboard(
+    item: dict[str, Any], *, archived: bool = False, importance: str | None = None
+) -> Keyboard:
+    token = short_id(str(item.get("id") or item.get("title") or ""))
+    back = f"s:notif:f:{importance or 'all'}:{'1' if archived else '0'}"
+    rows: list[list[Button]] = []
+    if archived:
+        rows.append(
+            [
+                Button("📤 Desarchivar", callback_data=f"s:notif:u:{token}"),
+                Button("🗑 Borrar", callback_data=f"s:notif:x:{token}"),
+            ]
+        )
+    else:
+        rows.append(
+            [
+                Button("📥 Archivar", callback_data=f"s:notif:a:{token}"),
+                Button("🔵 Marcar no leída", callback_data=f"s:notif:m:{token}"),
+            ]
+        )
+    rows.append([Button("🔙 Notificaciones", callback_data=back), Button("🏠 Menú", callback_data="m:main")])
+    return Keyboard(rows)
+
+
+def license_keyboard() -> Keyboard:
+    return Keyboard(
+        [
+            [Button("💾 Backup del flash", callback_data="s:flash")],
+            [Button("🔄 Actualizar", callback_data="s:license"), Button("🔙 Sistema", callback_data="m:sys")],
+            [Button("🏠 Menú", callback_data="m:main")],
+        ]
+    )
+
+
+def plugins_keyboard(page: int = 0, pages: int = 1) -> Keyboard:
+    rows: list[list[Button]] = []
+    if pages > 1:
+        rows.append(
+            [
+                Button("◀️", callback_data=f"s:plugins:{max(0, page - 1)}"),
+                Button(f"{page + 1}/{pages}", callback_data="s:plugins:noop"),
+                Button("▶️", callback_data=f"s:plugins:{min(pages - 1, page + 1)}"),
+            ]
+        )
+    rows.append([Button("➕ Instalar plugin", callback_data="s:plugin:add")])
+    rows.append(
+        [Button("🔄 Actualizar", callback_data=f"s:plugins:{page}"), Button("🔙 Sistema", callback_data="m:sys")]
+    )
+    rows.append([Button("🏠 Menú", callback_data="m:main")])
+    return Keyboard(rows)
+
+
+def services_keyboard() -> Keyboard:
+    return Keyboard(
+        [
+            [Button("🔄 Actualizar", callback_data="s:services"), Button("🌐 Red", callback_data="s:network")],
+            [Button("🔙 Sistema", callback_data="m:sys"), Button("🏠 Menú", callback_data="m:main")],
+        ]
+    )
+
+
+def network_keyboard(access_urls: list[dict[str, Any]] | None = None) -> Keyboard:
+    rows: list[list[Button]] = []
+    for access in access_urls or []:
+        if not isinstance(access, dict):
+            continue
+        url = access.get("ipv4") or access.get("ipv6")
+        if not url:
+            continue
+        label = f"🌐 {access.get('name') or access.get('type') or 'Abrir WebGUI'}"
+        rows.append([Button(shorten(label, 30), url=str(url))])
+    rows.append([Button("🔄 Actualizar", callback_data="s:network"), Button("🧩 Servicios", callback_data="s:services")])
+    rows.append([Button("🔙 Sistema", callback_data="m:sys"), Button("🏠 Menú", callback_data="m:main")])
+    return Keyboard(rows)
+
+
+def logs_keyboard(files: list[dict[str, Any]]) -> Keyboard:
+    rows: list[list[Button]] = []
+    for log in files[:12]:
+        path = str(log.get("path") or log.get("name") or "")
+        if not path:
+            continue
+        label = f"📜 {shorten(str(log.get('name') or path), 24)}"
+        rows.append([Button(label, callback_data=f"s:log:{short_id(path)}:0")])
+    rows.append([Button("🩺 Diagnóstico", callback_data="s:diag"), Button("🔄 Actualizar", callback_data="s:logs")])
+    rows.append([Button("🔙 Sistema", callback_data="m:sys"), Button("🏠 Menú", callback_data="m:main")])
+    return Keyboard(rows)
+
+
+def log_content_keyboard(token: str, page: int = 0, pages: int = 1) -> Keyboard:
+    rows: list[list[Button]] = []
+    if pages > 1:
+        rows.append(
+            [
+                Button("◀️", callback_data=f"s:log:{token}:{max(0, page - 1)}"),
+                Button(f"{page + 1}/{pages}", callback_data="s:log:noop"),
+                Button("▶️", callback_data=f"s:log:{token}:{min(pages - 1, page + 1)}"),
+            ]
+        )
+    rows.append([Button("📥 Enviar como archivo", callback_data=f"s:logfile:{token}")])
+    rows.append(
+        [Button("🔄 Recargar", callback_data=f"s:log:{token}:{page}"), Button("🔙 Logs", callback_data="s:logs")]
+    )
+    rows.append([Button("🏠 Menú", callback_data="m:main")])
+    return Keyboard(rows)
+
+
+def shares_keyboard(shares: list[dict[str, Any]]) -> Keyboard:
+    rows: list[list[Button]] = []
+    for share in sorted(shares, key=lambda item: str(item.get("name") or "").lower()):
+        name = str(share.get("name") or "share")
+        token = short_id(name)
+        rows.append([Button(f"📚 {shorten(name, 28)}", callback_data=f"s:share:{token}")])
+    rows.append([Button("🔄 Actualizar", callback_data="s:shares"), Button("🔙 Sistema", callback_data="m:sys")])
+    rows.append([Button("🏠 Menú", callback_data="m:main")])
+    return Keyboard(rows)
+
+
+def share_detail_keyboard(name: str) -> Keyboard:
+    return Keyboard(
+        [
+            [Button("🔄 Actualizar", callback_data=f"s:share:{short_id(name)}"), Button("📚 Shares", callback_data="s:shares")],
+            [Button("🔙 Sistema", callback_data="m:sys"), Button("🏠 Menú", callback_data="m:main")],
+        ]
+    )
+
+
+def smart_keyboard(disk: dict[str, Any], *, mountable: bool = False) -> Keyboard:
+    rows: list[list[Button]] = []
+    disk_id = disk.get("id")
+    if mountable and disk_id:
+        token = short_id(str(disk_id))
+        rows.append(
+            [
+                Button("📂 Montar", callback_data=f"s:disk:mount:{token}"),
+                Button("📤 Desmontar", callback_data=f"s:disk:unmount:{token}"),
+            ]
+        )
+    rows.append([Button("🔍 Discos físicos", callback_data="k:p"), Button("🏠 Menú", callback_data="m:main")])
+    return Keyboard(rows)
+
+
+def temperatures_keyboard() -> Keyboard:
+    return Keyboard(
+        [
+            [Button("⚙️ Umbrales", callback_data="s:thresh"), Button("🔧 Configurar", callback_data="s:thresh:set")],
+            [Button("🔄 Actualizar", callback_data="s:temp"), Button("🔙 Sistema", callback_data="m:sys")],
+            [Button("🏠 Menú", callback_data="m:main")],
+        ]
+    )
+
+
+def api_keys_keyboard(keys: list[dict[str, Any]]) -> Keyboard:
+    rows: list[list[Button]] = [[Button("➕ Crear clave VIEWER", callback_data="s:key:new")]]
+    for key in keys[:10]:
+        key_id = str(key.get("id") or "")
+        if not key_id:
+            continue
+        rows.append(
+            [
+                Button(
+                    f"🗑 {shorten(str(key.get('name') or 'clave'), 24)}",
+                    callback_data=f"s:key:del:{short_id(key_id)}",
+                )
+            ]
+        )
+    rows.append([Button("🔄 Actualizar", callback_data="s:keys"), Button("🔙 Sistema", callback_data="m:sys")])
+    rows.append([Button("🏠 Menú", callback_data="m:main")])
+    return Keyboard(rows)
+
+
+def identity_keyboard() -> Keyboard:
+    return Keyboard(
+        [
+            [Button("✏️ Editar nombre", callback_data="s:identity:edit")],
+            [Button("🔄 Actualizar", callback_data="s:identity"), Button("🔙 Sistema", callback_data="m:sys")],
+            [Button("🏠 Menú", callback_data="m:main")],
+        ]
+    )
+
+
+def diagnostics_keyboard() -> Keyboard:
+    return Keyboard(
+        [
+            [Button("📜 Logs", callback_data="s:logs"), Button("🔄 Actualizar", callback_data="s:diag")],
+            [Button("🔙 Sistema", callback_data="m:sys"), Button("🏠 Menú", callback_data="m:main")],
+        ]
+    )
+
+
+def flash_backup_keyboard(remotes: list[dict[str, Any]]) -> Keyboard:
+    rows: list[list[Button]] = []
+    for remote in remotes:
+        name = str(remote.get("name") or "").strip()
+        if not name:
+            continue
+        kind = remote.get("type")
+        label = f"💾 {name}" + (f" ({kind})" if kind else "")
+        rows.append([Button(shorten(label, 30), callback_data=f"s:flash:{short_id(name)}")])
+    rows.append(
+        [Button("🔙 Licencia", callback_data="s:license"), Button("🏠 Menú", callback_data="m:main")]
+    )
     return Keyboard(rows)
 
 

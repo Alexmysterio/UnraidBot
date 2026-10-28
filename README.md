@@ -198,6 +198,21 @@ Menú principal:
 | `/docker` | Contenedores: lista, o `start/stop/restart/pause/unpause/update/logs <nombre>`. |
 | `/vms` | VMs: lista, o `start/stop/reboot/pause/resume/force_stop/reset <nombre>`. |
 | `/sistema` | Array, paridad, UPS, notificaciones y shares. |
+| `/paridad` | Historial de comprobaciones de paridad. |
+| `/notificaciones` | Notificaciones con filtros, ficha y acciones. |
+| `/licencia` | Licencia y dispositivo flash. |
+| `/plugins` | Plugins instalados e instalación desde una URL `.plg`. |
+| `/servicios` | Servicios internos de Unraid. |
+| `/red` | Interfaces, IPs y accesos al WebGUI. |
+| `/logs` | Archivos de log y últimas líneas. |
+| `/smart` | Discos físicos, SMART y montaje/desmontaje. |
+| `/temperaturas` | Sensores, avisos y tráfico de red. |
+| `/umbrales` | Umbrales de temperatura del bot y de Unraid. |
+| `/claves` | Claves de API: crear `VIEWER` o borrar. |
+| `/servidor` | Identidad del servidor (nombre y comentario). |
+| `/diagnostico` | Diagnóstico del sistema y envío del syslog. |
+| `/notificar` | Crea una notificación `INFO` en Unraid. |
+| `/backupflash` | Copia `/boot` a un remoto de rclone. |
 | `/buscar` | Busca contenedores, VMs, discos, shares, UPS y notificaciones. |
 | `/historial` | Historial de auditoría con filtro y paginación (solo administradores). |
 | `/rendimiento` | CPU y RAM actuales con sparklines del historial guardado. |
@@ -226,12 +241,33 @@ Menú principal:
 ### Array y paridad
 
 - Iniciar/detener el array y controlar la comprobación de paridad.
-- Si el array está cifrado, inícialo desde el WebGUI: el bot no pide contraseñas.
+- La comprobación permite elegir entre **correctiva** (escribe correcciones) y **no correctiva** (solo lee y compara), con confirmación y aviso de duración.
+- **🕓 Historial paridad** (`/paridad`) muestra las comprobaciones registradas con estado, duración, velocidad, errores y tipo.
+- Si el array está cifrado, el bot pide la contraseña, borra tu mensaje y la usa una sola vez sin guardarla.
 
 ### Notificaciones
 
-- Ver alertas y avisos de Unraid.
+- Ver alertas y avisos de Unraid con filtros por importancia (alertas, avisos, info), pestaña de archivadas y paginación.
+- Toca una notificación para ver su ficha y **archivarla, desarchivarla, marcarla como no leída o borrarla** con confirmación.
 - **Archivar todas** las notificaciones no leídas.
+- `/notificar texto` crea una notificación `INFO` visible en el centro de notificaciones del WebGUI.
+
+### Sistema ampliado (v1.6)
+
+- **🪪 Licencia** (`/licencia`): estado, tipo, caducidad, actualizaciones y dispositivo flash.
+- **🔌 Plugins** (`/plugins`): lista paginada e instalación desde una URL `.plg` con confirmación.
+- **🧩 Servicios** (`/servicios`): estado y versión de los servicios internos.
+- **🌐 Red** (`/red`): interfaces, estado, velocidad, MTU, VLAN, IPv4/IPv6, MAC y accesos al WebGUI.
+- **📜 Logs** (`/logs`): lista de archivos, últimas líneas paginadas y envío del log como archivo.
+- **🔍 SMART** (`/smart`): ficha del disco, particiones y montaje/desmontaje de discos del array.
+- **📚 Shares**: detalle con uso, caché, asignador, split level, COW, LUKS e inclusiones/exclusiones.
+- **🌡️ Temperaturas** (`/temperaturas`): sensores, resumen, avisos y tráfico de red.
+- **⚙️ Umbrales** (`/umbrales`): consulta los del bot y actualiza los de Unraid (`cpu_warning`, `cpu_critical`, `disk_warning`, `disk_critical`).
+- **🔑 Claves API** (`/claves`): lista, creación con rol `VIEWER` (se muestra una sola vez) y borrado con confirmación.
+- **🏷️ Identidad** (`/servidor`): nombre y comentario del servidor.
+- **🩺 Diagnóstico** (`/diagnostico`): resumen, incidencias detectadas y envío del syslog.
+- **💾 Backup del flash** (`/backupflash`): copia `/boot` a un remoto de rclone configurado en Unraid.
+- **Docker ampliado**: **🧹 Mantenimiento** muestra actualizaciones pendientes y conflictos de puertos; **📦 Tamaños** muestra imagen, capa escribible y logs por contenedor; la ficha indica estado de imagen, tamaños, huérfanos y conflictos.
 
 ### Búsqueda e historial
 
@@ -291,6 +327,9 @@ Actívalas en **🔔 Alertas → Activar aquí**. El bot avisa de:
 - API de Unraid inaccesible (tras dos ciclos consecutivos sin respuesta).
 - Array detenido, casi lleno o con problemas.
 - Paridad con errores, última comprobación fallida o demasiado antigua.
+- Historial de paridad con una comprobación fallida que el estado actual ya no refleja.
+- Licencia caducada, a punto de caducar o con estado inválido.
+- Servicios internos de Unraid caídos.
 - Discos en rojo/amarillo, con errores, SMART distinto de `OK` o temperatura alta.
 - Shares por encima del umbral de uso.
 - Contenedores caídos, `unhealthy` o en estado `DEAD`.
@@ -369,9 +408,9 @@ Comprueba configuración, ping a la API y permisos de cada sección.
 ## ⚠️ Limitaciones
 
 - La API de Unraid no permite apagar ni reiniciar el host.
-- El bot no gestiona usuarios, shares ni plugins de Unraid.
+- El bot no crea ni modifica usuarios, shares ni la configuración general de Unraid; solo instala plugins desde una URL y gestiona claves API con rol `VIEWER`.
 - Las VMs no tienen consola ni snapshots desde el bot.
-- El array cifrado debe iniciarse desde el WebGUI.
+- El array cifrado se puede iniciar desde el bot con la contraseña (se usa una vez y no se guarda). Para operaciones avanzadas, usa el WebGUI.
 
 ---
 

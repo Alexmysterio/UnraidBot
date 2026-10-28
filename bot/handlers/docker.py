@@ -12,7 +12,14 @@ from telegram.ext import ContextTypes
 
 from ..formatting import esc
 from ..i18n import localize
-from ..keyboards import confirm_keyboard, docker_detail_keyboard, docker_list_keyboard, docker_logs_keyboard
+from ..keyboards import (
+    confirm_keyboard,
+    docker_detail_keyboard,
+    docker_list_keyboard,
+    docker_logs_keyboard,
+    docker_maintenance_keyboard,
+    docker_sizes_keyboard,
+)
 from ..security import resolve_short
 from ..search import find_named
 from ..unraid import UnraidError
@@ -22,6 +29,7 @@ from ..views import (
     paginate,
     sort_containers,
 )
+from ..views_system import build_docker_extras, build_docker_sizes
 from .common import audit, authorized, ensure_writable, get_settings, notify, render
 
 PER_PAGE = 8
@@ -191,6 +199,62 @@ async def _detail_by_token(
     return resolve_short(containers, token), containers
 
 
+async def _extras_for(
+    context: ContextTypes.DEFAULT_TYPE, container: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Datos de mantenimiento del contenedor; nunca impide abrir su ficha."""
+    client = context.bot_data["client"]
+    try:
+        extras = await client.docker_extras()
+    except UnraidError:
+        return None
+    name = _name(container)
+    merged: dict[str, Any] = {}
+    for item in extras.get("containers") or []:
+        if not isinstance(item, dict):
+            continue
+        names = [str(value).lstrip("/") for value in item.get("names") or []]
+        if str(item.get("id") or "") == str(container.get("id") or "") or name in names:
+            merged.update(item)
+            break
+    for item in extras.get("updates") or []:
+        if isinstance(item, dict) and str(item.get("name") or "") == name:
+            merged["updateStatus"] = item.get("updateStatus")
+            break
+    conflicts: list[str] = []
+    port_conflicts = extras.get("conflicts") or {}
+    for conflict in port_conflicts.get("containerPorts") or []:
+        members = conflict.get("containers") or []
+        if any(str(item.get("name") or "") == name for item in members if isinstance(item, dict)):
+            conflicts.append(f"interno {conflict.get('privatePort')}")
+    for conflict in port_conflicts.get("lanPorts") or []:
+        members = conflict.get("containers") or []
+        if any(str(item.get("name") or "") == name for item in members if isinstance(item, dict)):
+            conflicts.append(str(conflict.get("lanIpPort") or "LAN"))
+    if conflicts:
+        merged["conflicts"] = conflicts
+    return merged or None
+
+
+@authorized
+async def show_maintenance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    client = context.bot_data["client"]
+    extras = await client.docker_extras()
+    await render(
+        update,
+        context,
+        build_docker_extras(extras),
+        docker_maintenance_keyboard(),
+    )
+
+
+@authorized
+async def show_sizes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    client = context.bot_data["client"]
+    extras = await client.docker_extras()
+    await render(update, context, build_docker_sizes(extras), docker_sizes_keyboard())
+
+
 @authorized
 async def show_detail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -203,7 +267,13 @@ async def show_detail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if container is None:
         await notify(update, context, "Ese contenedor ya no existe.")
         return
-    await render(update, context, build_docker_detail(container), docker_detail_keyboard(container, page))
+    extras = await _extras_for(context, container)
+    await render(
+        update,
+        context,
+        build_docker_detail(container, extras=extras),
+        docker_detail_keyboard(container, page),
+    )
 
 
 @authorized

@@ -32,7 +32,10 @@ LONG_ACTIONS = {
     "docker.update",
     "docker.update_all",
     "array.start",
+    "array.start_encrypted",
     "array.stop",
+    "plugin.install",
+    "flash.backup",
     "vm.reboot",
     "vm.force_stop",
     "vm.reset",
@@ -42,7 +45,10 @@ LONG_TITLES = {
     "docker.update": "Actualizando contenedor",
     "docker.update_all": "Actualizando contenedores",
     "array.start": "Iniciando el array",
+    "array.start_encrypted": "Iniciando el array cifrado",
     "array.stop": "Deteniendo el array",
+    "plugin.install": "Instalando plugin",
+    "flash.backup": "Copiando el flash",
     "vm.reboot": "Reiniciando la VM",
     "vm.force_stop": "Forzando el apagado de la VM",
     "vm.reset": "Reseteando la VM",
@@ -62,14 +68,30 @@ async def _execute(context: ContextTypes.DEFAULT_TYPE, item: Confirmation) -> No
         await client.vm_action(action.split(".", 1)[1], str(item.args["id"]))
     elif action == "array.start":
         await client.set_array_state("START")
+    elif action == "array.start_encrypted":
+        await client.start_array_encrypted(str(item.args.get("password") or "") or None)
     elif action == "array.stop":
         await client.set_array_state("STOP")
+    elif action == "array.mount":
+        await client.mount_array_disk(str(item.args["id"]))
+    elif action == "array.unmount":
+        await client.unmount_array_disk(str(item.args["id"]))
     elif action == "parity.start":
-        await client.parity_action("start")
+        await client.parity_action("start", correct=bool(item.args.get("correct", False)))
     elif action == "parity.cancel":
         await client.parity_action("cancel")
     elif action == "notifications.archive_all":
         await client.archive_all_notifications()
+    elif action == "notification.delete":
+        await client.delete_notification(
+            str(item.args["id"]), archived=bool(item.args.get("archived", False))
+        )
+    elif action == "plugin.install":
+        await client.install_plugin(str(item.args["url"]))
+    elif action == "flash.backup":
+        await client.flash_backup(str(item.args["remote"]))
+    elif action == "apikey.delete":
+        await client.delete_api_key(str(item.args["id"]))
     elif action == "mikrotik.reboot":
         service = MikroTik(context.bot_data["settings"])
         try:

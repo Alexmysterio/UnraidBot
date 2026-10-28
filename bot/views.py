@@ -459,7 +459,11 @@ def build_docker_list(containers: list[dict[str, Any]], page: int, per_page: int
     return "\n".join(lines)
 
 
-def build_docker_detail(container: dict[str, Any], logs: list[dict[str, Any]] | None = None) -> str:
+def build_docker_detail(
+    container: dict[str, Any],
+    logs: list[dict[str, Any]] | None = None,
+    extras: dict[str, Any] | None = None,
+) -> str:
     name = _container_name(container)
     state = container.get("state")
     lines = [f"🐳 <b>{esc(name)}</b>  {container_emoji(state)}", ""]
@@ -493,6 +497,30 @@ def build_docker_detail(container: dict[str, Any], logs: list[dict[str, Any]] | 
         lines.append("Actualización: ⬆️ disponible")
     elif container.get("isUpdateAvailable") is False:
         lines.append("Actualización: al día")
+    if extras:
+        status = str(extras.get("updateStatus") or "").upper()
+        if status and status not in {"UP_TO_DATE", "UNKNOWN"}:
+            label = {
+                "UPDATE_AVAILABLE": "⬆️ hay una imagen nueva",
+                "REBUILD_READY": "🔁 hay que reconstruir",
+            }.get(status, status)
+            lines.append(f"Estado de imagen: {esc(label)}")
+        sizes = []
+        for key, label in (
+            ("sizeRootFs", "imagen"),
+            ("sizeRw", "capa RW"),
+            ("sizeLog", "log"),
+        ):
+            if extras.get(key) is not None:
+                sizes.append(f"{label} {fmt_bytes(extras.get(key))}")
+        if sizes:
+            lines.append(f"Tamaño: {' · '.join(sizes)}")
+        if extras.get("isOrphaned"):
+            lines.append("⚠️ Contenedor huérfano: su imagen ya no existe.")
+        conflicts = extras.get("conflicts") or []
+        if conflicts:
+            listed = ", ".join(str(item) for item in conflicts[:6])
+            lines.append(f"⚠️ Conflictos de puertos: {esc(listed)}")
     container_id = str(container.get("id") or "")
     if container_id:
         short = container_id.split(":")[-1][:12]
@@ -577,6 +605,22 @@ def build_system_menu(snapshot: Snapshot | None) -> str:
                 f"Notificaciones: {unread.get('alert', 0)} alertas · "
                 f"{unread.get('warning', 0)} avisos · {unread.get('info', 0)} info"
             )
+        registration = _get(snapshot.license, "registration", default={}) or {}
+        if registration:
+            license_state = str(registration.get("state") or "").upper()
+            emoji = "✅" if license_state not in {"INVALID", "EXPIRED", "TRIAL_EXPIRED"} else "⚠️"
+            lines.append(f"Licencia: {emoji} {esc(license_state or '—')}")
+        if snapshot.services:
+            down = [
+                str(item.get("name") or item.get("id") or "servicio")
+                for item in snapshot.services
+                if isinstance(item, dict) and not item.get("online")
+            ]
+            if down:
+                listed = ", ".join(down[:4])
+                lines.append(f"Servicios caídos: ⚠️ {esc(listed)}")
+            else:
+                lines.append("Servicios: ✅ todos activos")
         lines.append("")
     lines.append("Elige una sección:")
     return "\n".join(lines)

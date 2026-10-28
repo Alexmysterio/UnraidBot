@@ -67,6 +67,13 @@ def _disk_key(disk: dict[str, Any], name: str) -> str:
     return str(disk.get("id") or name)
 
 
+def _int(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 def _usage(used: Any, total: Any) -> float | None:
     try:
         used_f, total_f = float(used or 0), float(total or 0)
@@ -145,6 +152,88 @@ def detect_problems(snapshot: Snapshot, settings: Settings) -> list[Problem]:
                         screen="s:parity",
                     )
                 )
+
+    # Historial de paridad: incidencias que el estado actual ya no refleja.
+    history = [item for item in (snapshot.parity_history or []) if isinstance(item, dict)]
+    if history:
+        failing = [
+            item
+            for item in history
+            if str(item.get("status") or "").upper() in {"FAILED", "ERROR"}
+            or _int(item.get("errors")) > 0
+        ]
+        if failing:
+            latest = max(failing, key=lambda item: str(item.get("date") or ""))
+            same_as_current = str(latest.get("date") or "") == str(parity.get("date") or "")
+            if not same_as_current:
+                errors = _int(latest.get("errors"))
+                when = str(latest.get("date") or "sin fecha")
+                problems.append(
+                    Problem(
+                        key="parity:history",
+                        severity="warning",
+                        title="La última comprobación de paridad registrada falló",
+                        detail=(
+                            f"{when}: {errors} errores."
+                            if errors
+                            else f"{when}: estado {latest.get('status') or 'desconocido'}."
+                        ),
+                        screen="s:ph",
+                    )
+                )
+
+    # Licencia
+    registration = (snapshot.license or {}).get("registration") or {}
+    if registration:
+        license_state = str(registration.get("state") or "").upper()
+        if license_state in {"EXPIRED", "TRIAL_EXPIRED", "INVALID", "NOT_FOUND"}:
+            problems.append(
+                Problem(
+                    key="license:state",
+                    severity="critical" if license_state != "TRIAL_EXPIRED" else "warning",
+                    title="Licencia de Unraid no válida",
+                    detail=f"Estado: {license_state}.",
+                    screen="s:license",
+                )
+            )
+        expiration = parse_iso(registration.get("expiration"))
+        if expiration is not None:
+            days_left = (expiration - datetime.now(timezone.utc)).days
+            if days_left < 0:
+                problems.append(
+                    Problem(
+                        key="license:expired",
+                        severity="critical",
+                        title="Licencia de Unraid caducada",
+                        detail=f"Caducó hace {abs(days_left)} días.",
+                        screen="s:license",
+                    )
+                )
+            elif days_left <= 30:
+                problems.append(
+                    Problem(
+                        key="license:expiry",
+                        severity="warning",
+                        title="Licencia de Unraid a punto de caducar",
+                        detail=f"Quedan {days_left} días.",
+                        screen="s:license",
+                    )
+                )
+
+    # Servicios internos de Unraid
+    for service in snapshot.services or []:
+        if not isinstance(service, dict) or service.get("online"):
+            continue
+        service_name = str(service.get("name") or service.get("id") or "servicio")
+        problems.append(
+            Problem(
+                key=f"service:{service_name}",
+                severity="warning",
+                title=f"Servicio caído: {service_name}",
+                detail="Unraid lo marca como no disponible.",
+                screen="s:services",
+            )
+        )
 
     capacity = _get(array, "capacity", "kilobytes", default={}) or {}
     array_usage = _usage(capacity.get("used"), capacity.get("total"))

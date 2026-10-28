@@ -4,6 +4,43 @@ Todas las novedades relevantes de este proyecto se documentan aquí. El formato
 sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto
 usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [1.6.0] - 2026-10-28
+
+### Añadido
+
+- **Historial de paridad** (`/paridad`): comprobaciones paginadas con estado, duración, velocidad, errores y tipo (correctiva o no correctiva).
+- **Array cifrado desde el bot**: al iniciar un array cifrado se pide la contraseña, se borra el mensaje del chat y se usa una sola vez.
+- **Paridad correctiva o no correctiva**: antes de arrancar la comprobación se elige el tipo y se confirma.
+- **Notificaciones ampliadas**: filtros por importancia y por archivo, paginación, ficha de cada aviso y acciones para archivar, desarchivar, marcar como no leída o borrar. `/notificar` crea una notificación `INFO` en Unraid.
+- **Licencia y flash** (`/licencia`): estado, tipo, caducidad, actualizaciones y datos del dispositivo flash.
+- **Plugins** (`/plugins`): lista paginada e instalación desde una URL `.plg` con confirmación.
+- **Servicios internos** (`/servicios`): estado y versión de los servicios de Unraid.
+- **Red** (`/red`): interfaces, estado, velocidad, MTU, VLAN, IPv4/IPv6, MAC y accesos al WebGUI.
+- **Logs** (`/logs`): lista de archivos, últimas líneas paginadas y envío del log como archivo.
+- **SMART y discos** (`/smart`): ficha completa, particiones y montaje/desmontaje de discos del array con confirmación.
+- **Detalle de shares**: uso, caché, asignador, split level, COW, LUKS e inclusiones/exclusiones.
+- **Temperaturas y tráfico** (`/temperaturas`): sensores, resumen, avisos y tráfico de red.
+- **Umbrales** (`/umbrales`): consulta los del bot y actualiza los de Unraid (`cpu_warning`, `cpu_critical`, `disk_warning`, `disk_critical`).
+- **Claves de API** (`/claves`): lista, creación con rol `VIEWER` (se muestra una sola vez) y borrado con confirmación.
+- **Identidad del servidor** (`/servidor`): nombre y comentario editables.
+- **Diagnóstico** (`/diagnostico`): resumen del sistema, incidencias detectadas y envío del syslog.
+- **Backup del flash** (`/backupflash`): copia de `/boot` a un remoto de rclone con confirmación.
+- **Docker ampliado**: mantenimiento con actualizaciones pendientes y conflictos de puertos; tamaños de imagen, capa escribible y logs; ficha con estado de imagen, tamaños, contenedores huérfanos y conflictos.
+- **Alertas nuevas**: última comprobación de paridad fallida, licencia caducada o a punto de caducar, estado de licencia inválido y servicios caídos.
+- Menú **Sistema** con resumen de licencia y servicios, y 14 botones de acceso directo.
+- Traducciones nuevas en inglés, francés e italiano para todas las pantallas.
+
+### Cambiado
+
+- `snapshot(include_health=True)` añade historial de paridad, licencia y servicios; solo lo piden el monitor y el menú Sistema.
+- Las consultas nuevas son independientes para que un campo no soportado en versiones antiguas de Unraid no rompa las pantallas existentes.
+- `SHARES_QUERY` incorpora los campos ampliados del share (asignador, split level, COW, LUKS, include/exclude).
+- El cliente envía siempre `password` al iniciar un array cifrado y acepta `correct` en la comprobación de paridad.
+
+### Corregido
+
+- Si la API no soporta historial de paridad, licencia o servicios, esas pantallas lo explican y el resto sigue funcionando.
+
 ## [1.5.2] - 2026-10-27
 
 ### Corregido

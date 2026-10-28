@@ -78,7 +78,7 @@ class AlertMonitor:
         if not subscribers:
             return
 
-        snapshot = await self.client.snapshot(include_storage=True)
+        snapshot = await self.client.snapshot(include_storage=True, include_health=True)
         if not snapshot.reachable:
             await self._handle_offline(subscribers)
             return
@@ -212,8 +212,14 @@ def problems_summary(problems: list[Problem]) -> list[dict[str, Any]]:
 
 def _section_available(key: str, snapshot: Any) -> bool:
     """True si la consulta que produciría esa incidencia respondió bien."""
+    if key.startswith("parity:history"):
+        return snapshot.parity_history is not None
     if key.startswith(("array:", "parity:", "disk:")):
         return snapshot.array is not None
+    if key.startswith("license:"):
+        return snapshot.license is not None
+    if key.startswith("service:"):
+        return snapshot.services is not None
     if key.startswith(("cpu:", "network:")):
         return snapshot.info is not None
     if key.startswith("memory:"):

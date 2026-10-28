@@ -461,8 +461,10 @@ async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 @authorized
 async def fallback_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Texto libre: primero busca o filtra, si no hay captura muestra el menú."""
-    from . import history, qbittorrent, search
+    from . import history, qbittorrent, search, system_extra
 
+    if await system_extra.consume_text(update, context):
+        return
     if await qbittorrent.consume_text(update, context):
         return
     if await search.consume_text(update, context):

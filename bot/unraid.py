@@ -151,7 +151,10 @@ query NotificationsInfo {
 
 SHARES_QUERY = """
 query SharesInfo {
-  shares { name used free size cache comment }
+  shares {
+    name used free size cache comment nameOrig allocator splitLevel floor cow luksStatus
+    include exclude
+  }
 }
 """
 
@@ -167,6 +170,126 @@ query PhysicalDisks {
 
 PING_QUERY = """
 query Ping { online }
+"""
+
+PARITY_HISTORY_QUERY = """
+query ParityHistory {
+  parityHistory { date duration speed status errors progress correcting paused running }
+}
+"""
+
+NOTIFICATIONS_LIST_QUERY = """
+query NotificationsList($filter: NotificationFilter!) {
+  notifications {
+    overview {
+      unread { info warning alert total }
+      archive { info warning alert total }
+    }
+    list(filter: $filter) {
+      id title subject description importance link type timestamp
+    }
+  }
+}
+"""
+
+REGISTRATION_QUERY = """
+query RegistrationInfo {
+  registration { type state expiration updateExpiration keyFile { location } }
+  flash { id guid vendor product }
+}
+"""
+
+SERVER_QUERY = """
+query ServerInfo {
+  server { id name comment }
+}
+"""
+
+PLUGINS_QUERY = """
+query Plugins {
+  plugins { name version hasApiModule hasCliModule }
+}
+"""
+
+SERVICES_QUERY = """
+query Services {
+  services { id name online version uptime { timestamp } }
+}
+"""
+
+NETWORK_QUERY = """
+query NetworkInfo {
+  networkInterfaces {
+    id name description macAddress mtu speed duplex internal virtual operstate type vlanId
+    ipv4Addresses { address netmask }
+    ipv6Addresses { address prefixLength }
+  }
+  network { accessUrls { type name ipv4 ipv6 } }
+}
+"""
+
+LOG_FILES_QUERY = """
+query LogFiles {
+  logFiles { name path size modifiedAt }
+}
+"""
+
+LOG_FILE_QUERY = """
+query LogFile($path: String!, $lines: Int, $startLine: Int) {
+  logFile(path: $path, lines: $lines, startLine: $startLine) {
+    path content totalLines startLine
+  }
+}
+"""
+
+TEMPERATURES_QUERY = """
+query Temperatures {
+  metrics {
+    temperature {
+      summary {
+        average warningCount criticalCount
+        hottest { name current { value unit } }
+        coolest { name current { value unit } }
+      }
+      sensors {
+        id name type location
+        current { value unit status }
+        min { value unit }
+        max { value unit }
+        warning critical
+      }
+    }
+    network {
+      id name operstate bytesReceived bytesSent packetsReceived packetsSent
+      receiveErrors transmitErrors
+    }
+  }
+}
+"""
+
+API_KEYS_QUERY = """
+query ApiKeys {
+  apiKeys { id name description roles createdAt }
+}
+"""
+
+RCLONE_REMOTES_QUERY = """
+query RcloneRemotes {
+  rclone { remotes { name type } }
+}
+"""
+
+DOCKER_EXTRAS_QUERY = """
+query DockerExtras {
+  docker {
+    containers { id names sizeRootFs sizeRw sizeLog isOrphaned isRebuildReady }
+    containerUpdateStatuses { name updateStatus }
+    portConflicts {
+      containerPorts { privatePort type containers { id name } }
+      lanPorts { lanIpPort publicPort type containers { id name } }
+    }
+  }
+}
 """
 
 DOCKER_LOGS_QUERY = """
@@ -202,18 +325,119 @@ mutation ArchiveAllNotifications {
 }
 """
 
+ARCHIVE_NOTIFICATION = """
+mutation ArchiveNotification($id: PrefixedID!) {
+  archiveNotification(id: $id) { id type }
+}
+"""
+
+UNARCHIVE_NOTIFICATIONS = """
+mutation UnarchiveNotifications($ids: [PrefixedID!]!) {
+  unarchiveNotifications(ids: $ids) {
+    unread { total }
+    archive { total }
+  }
+}
+"""
+
+UNREAD_NOTIFICATION = """
+mutation UnreadNotification($id: PrefixedID!) {
+  unreadNotification(id: $id) { id type }
+}
+"""
+
+DELETE_NOTIFICATION = """
+mutation DeleteNotification($id: PrefixedID!, $type: NotificationType!) {
+  deleteNotification(id: $id, type: $type) {
+    unread { total }
+    archive { total }
+  }
+}
+"""
+
+CREATE_NOTIFICATION = """
+mutation CreateNotification($input: NotificationData!) {
+  createNotification(input: $input) { id }
+}
+"""
+
 ARRAY_SET_STATE = """
 mutation SetArrayState($state: ArrayStateInputState!) {
   array { setState(input: { desiredState: $state }) { state } }
 }
 """
 
+ARRAY_START_WITH_PASSWORD = """
+mutation StartArrayEncrypted($password: String) {
+  array {
+    setState(input: { desiredState: START, decryptionPassword: $password }) { state }
+  }
+}
+"""
+
+PARITY_START = """
+mutation StartParity($correct: Boolean!) {
+  parityCheck { start(correct: $correct) }
+}
+"""
+
 PARITY_MUTATIONS = {
-    "start": "mutation { parityCheck { start(correct: false) } }",
     "pause": "mutation { parityCheck { pause } }",
     "resume": "mutation { parityCheck { resume } }",
     "cancel": "mutation { parityCheck { cancel } }",
 }
+
+MOUNT_ARRAY_DISK = """
+mutation MountArrayDisk($id: PrefixedID!) {
+  array { mountArrayDisk(id: $id) { id name } }
+}
+"""
+
+UNMOUNT_ARRAY_DISK = """
+mutation UnmountArrayDisk($id: PrefixedID!) {
+  array { unmountArrayDisk(id: $id) { id name } }
+}
+"""
+
+INSTALL_PLUGIN = """
+mutation InstallPlugin($input: InstallPluginInput!) {
+  unraidPlugins {
+    installPlugin(input: $input) { id status name url output }
+  }
+}
+"""
+
+FLASH_BACKUP = """
+mutation FlashBackup($input: InitiateFlashBackupInput!) {
+  initiateFlashBackup(input: $input) { status jobId }
+}
+"""
+
+TEMPERATURE_CONFIG = """
+mutation TemperatureConfig($input: TemperatureConfigInput!) {
+  updateTemperatureConfig(input: $input)
+}
+"""
+
+API_KEY_CREATE = """
+mutation CreateApiKey($input: CreateApiKeyInput!) {
+  apiKey {
+    create(input: $input) { id key name description roles createdAt }
+  }
+}
+"""
+
+API_KEY_DELETE = """
+mutation DeleteApiKey($input: DeleteApiKeyInput!) {
+  apiKey { delete(input: $input) }
+}
+"""
+
+SERVER_IDENTITY = """
+mutation ServerIdentity($name: String!, $comment: String) {
+  updateServerIdentity(name: $name, comment: $comment) { id name comment }
+}
+"""
 
 DOCKER_ACTIONS = {
     "start": "start",
@@ -260,6 +484,9 @@ class Snapshot:
     vms: list[dict[str, Any]] | None = None
     physical_disks: list[dict[str, Any]] | None = None
     shares: list[dict[str, Any]] | None = None
+    parity_history: list[dict[str, Any]] | None = None
+    license: dict[str, Any] | None = None
+    services: list[dict[str, Any]] | None = None
     errors: dict[str, str] = field(default_factory=dict)
     fetched_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -444,11 +671,19 @@ class UnraidClient:
         data = await self._execute(DOCKER_LOGS_QUERY, {"id": container_id, "tail": tail})
         return ((data.get("docker") or {}).get("logs") or {}).get("lines") or []
 
-    async def snapshot(self, *, include_info: bool = True, include_storage: bool = False) -> Snapshot:
+    async def snapshot(
+        self,
+        *,
+        include_info: bool = True,
+        include_storage: bool = False,
+        include_health: bool = False,
+    ) -> Snapshot:
         """Lanza las consultas en paralelo y tolera fallos parciales.
 
         ``include_storage`` añade discos físicos (SMART) y shares. Solo se usa
         en las pantallas y en el monitor que necesitan esos datos.
+        ``include_health`` añade el historial de paridad, la licencia y los
+        servicios; solo lo pide el monitor de alertas.
         """
         jobs: dict[str, Any] = {
             "array": self.array(),
@@ -463,6 +698,10 @@ class UnraidClient:
         if include_storage:
             jobs["physical_disks"] = self.physical_disks()
             jobs["shares"] = self.shares()
+        if include_health:
+            jobs["parity_history"] = self.parity_history()
+            jobs["license"] = self.registration()
+            jobs["services"] = self.services()
 
         results = await asyncio.gather(*jobs.values(), return_exceptions=True)
         snapshot = Snapshot()
@@ -498,7 +737,10 @@ class UnraidClient:
             raise ValueError(f"Estado de array inválido: {state}")
         await self._execute(ARRAY_SET_STATE, {"state": state}, retry=False, timeout=180.0)
 
-    async def parity_action(self, action: str) -> None:
+    async def parity_action(self, action: str, *, correct: bool = False) -> None:
+        if action == "start":
+            await self._execute(PARITY_START, {"correct": correct}, retry=False)
+            return
         query = PARITY_MUTATIONS.get(action)
         if query is None:
             raise ValueError(f"Acción de paridad desconocida: {action}")
@@ -525,3 +767,226 @@ class UnraidClient:
     async def archive_all_notifications(self) -> None:
         """Archiva todas las notificaciones no leídas."""
         await self._execute(ARCHIVE_ALL_NOTIFICATIONS, retry=False)
+
+    # -- notificaciones -----------------------------------------------------
+
+    async def notifications_page(
+        self,
+        *,
+        archived: bool = False,
+        importance: str | None = None,
+        offset: int = 0,
+        limit: int = 5,
+    ) -> list[dict[str, Any]]:
+        """Lista notificaciones leídas o archivadas, con filtro opcional."""
+        view = await self.notifications_filtered(
+            archived=archived, importance=importance, offset=offset, limit=limit
+        )
+        return view["items"]
+
+    async def notifications_filtered(
+        self,
+        *,
+        archived: bool = False,
+        importance: str | None = None,
+        offset: int = 0,
+        limit: int = 5,
+    ) -> dict[str, Any]:
+        """Devuelve el resumen y la página de notificaciones en una sola consulta."""
+        filter_data: dict[str, Any] = {
+            "type": "ARCHIVE" if archived else "UNREAD",
+            "offset": max(0, offset),
+            "limit": max(1, limit),
+        }
+        if importance:
+            filter_data["importance"] = importance
+        data = await self._execute(NOTIFICATIONS_LIST_QUERY, {"filter": filter_data})
+        notifications = data.get("notifications") or {}
+        return {
+            "overview": notifications.get("overview") or {},
+            "items": notifications.get("list") or [],
+        }
+
+    async def archive_notification(self, notification_id: str) -> None:
+        await self._execute(ARCHIVE_NOTIFICATION, {"id": notification_id}, retry=False)
+
+    async def unarchive_notification(self, notification_id: str) -> None:
+        await self._execute(
+            UNARCHIVE_NOTIFICATIONS, {"ids": [notification_id]}, retry=False
+        )
+
+    async def mark_notification_unread(self, notification_id: str) -> None:
+        await self._execute(UNREAD_NOTIFICATION, {"id": notification_id}, retry=False)
+
+    async def delete_notification(
+        self, notification_id: str, *, archived: bool = False
+    ) -> None:
+        await self._execute(
+            DELETE_NOTIFICATION,
+            {"id": notification_id, "type": "ARCHIVE" if archived else "UNREAD"},
+            retry=False,
+        )
+
+    async def create_notification(
+        self,
+        *,
+        title: str,
+        subject: str,
+        description: str,
+        importance: str = "INFO",
+        link: str | None = None,
+    ) -> None:
+        payload: dict[str, Any] = {
+            "title": title,
+            "subject": subject,
+            "description": description,
+            "importance": importance,
+        }
+        if link:
+            payload["link"] = link
+        await self._execute(CREATE_NOTIFICATION, {"input": payload}, retry=False)
+
+    # -- sistema ampliado ---------------------------------------------------
+
+    async def parity_history(self) -> list[dict[str, Any]]:
+        data = await self._execute(PARITY_HISTORY_QUERY)
+        return data.get("parityHistory") or []
+
+    async def registration(self) -> dict[str, Any]:
+        data = await self._execute(REGISTRATION_QUERY)
+        return {
+            "registration": data.get("registration"),
+            "flash": data.get("flash"),
+        }
+
+    async def server_identity(self) -> dict[str, Any]:
+        data = await self._execute(SERVER_QUERY)
+        return data.get("server") or {}
+
+    async def set_server_identity(self, name: str, comment: str | None = None) -> dict[str, Any]:
+        data = await self._execute(
+            SERVER_IDENTITY, {"name": name, "comment": comment}, retry=False
+        )
+        return data.get("updateServerIdentity") or {}
+
+    async def plugins(self) -> list[dict[str, Any]]:
+        data = await self._execute(PLUGINS_QUERY)
+        return data.get("plugins") or []
+
+    async def install_plugin(self, url: str, name: str | None = None) -> dict[str, Any]:
+        payload: dict[str, Any] = {"url": url, "forced": True}
+        if name:
+            payload["name"] = name
+        data = await self._execute(
+            INSTALL_PLUGIN, {"input": payload}, retry=False, timeout=600.0
+        )
+        return ((data.get("unraidPlugins") or {}).get("installPlugin")) or {}
+
+    async def services(self) -> list[dict[str, Any]]:
+        data = await self._execute(SERVICES_QUERY)
+        return data.get("services") or []
+
+    async def network(self) -> dict[str, Any]:
+        data = await self._execute(NETWORK_QUERY)
+        return {
+            "interfaces": data.get("networkInterfaces") or [],
+            "access_urls": ((data.get("network") or {}).get("accessUrls")) or [],
+        }
+
+    async def log_files(self) -> list[dict[str, Any]]:
+        data = await self._execute(LOG_FILES_QUERY)
+        return data.get("logFiles") or []
+
+    async def log_file(self, path: str, *, lines: int = 200, start_line: int | None = None) -> dict[str, Any]:
+        variables: dict[str, Any] = {"path": path, "lines": max(1, lines)}
+        if start_line is not None:
+            variables["startLine"] = max(0, start_line)
+        data = await self._execute(LOG_FILE_QUERY, variables)
+        return data.get("logFile") or {}
+
+    async def temperatures(self) -> dict[str, Any]:
+        data = await self._execute(TEMPERATURES_QUERY)
+        metrics = data.get("metrics") or {}
+        return {
+            "temperature": metrics.get("temperature") or {},
+            "network": metrics.get("network") or [],
+        }
+
+    async def docker_extras(self) -> dict[str, Any]:
+        data = await self._execute(DOCKER_EXTRAS_QUERY)
+        docker = data.get("docker") or {}
+        return {
+            "containers": docker.get("containers") or [],
+            "updates": docker.get("containerUpdateStatuses") or [],
+            "conflicts": docker.get("portConflicts") or {},
+        }
+
+    async def api_keys(self) -> list[dict[str, Any]]:
+        data = await self._execute(API_KEYS_QUERY)
+        return data.get("apiKeys") or []
+
+    async def rclone_remotes(self) -> list[dict[str, Any]]:
+        data = await self._execute(RCLONE_REMOTES_QUERY)
+        return ((data.get("rclone") or {}).get("remotes")) or []
+
+    async def create_api_key(self, name: str, *, description: str = "") -> dict[str, Any]:
+        data = await self._execute(
+            API_KEY_CREATE,
+            {
+                "input": {
+                    "name": name,
+                    "description": description,
+                    "roles": ["VIEWER"],
+                }
+            },
+            retry=False,
+        )
+        return ((data.get("apiKey") or {}).get("create")) or {}
+
+    async def delete_api_key(self, key_id: str) -> bool:
+        data = await self._execute(
+            API_KEY_DELETE, {"input": {"ids": [key_id]}}, retry=False
+        )
+        return bool((data.get("apiKey") or {}).get("delete"))
+
+    async def update_temperature_config(self, thresholds: dict[str, Any]) -> bool:
+        data = await self._execute(
+            TEMPERATURE_CONFIG, {"input": {"thresholds": thresholds}}, retry=False
+        )
+        return bool(data.get("updateTemperatureConfig"))
+
+    async def flash_backup(
+        self,
+        remote: str,
+        *,
+        source: str = "/boot",
+        destination: str = "unraidbot-flash-backup",
+    ) -> dict[str, Any]:
+        data = await self._execute(
+            FLASH_BACKUP,
+            {
+                "input": {
+                    "remoteName": remote,
+                    "sourcePath": source,
+                    "destinationPath": destination,
+                }
+            },
+            retry=False,
+            timeout=600.0,
+        )
+        return data.get("initiateFlashBackup") or {}
+
+    async def start_array_encrypted(self, password: str | None = None) -> None:
+        await self._execute(
+            ARRAY_START_WITH_PASSWORD,
+            {"password": password},
+            retry=False,
+            timeout=180.0,
+        )
+
+    async def mount_array_disk(self, disk_id: str) -> None:
+        await self._execute(MOUNT_ARRAY_DISK, {"id": disk_id}, retry=False)
+
+    async def unmount_array_disk(self, disk_id: str) -> None:
+        await self._execute(UNMOUNT_ARRAY_DISK, {"id": disk_id}, retry=False)
+

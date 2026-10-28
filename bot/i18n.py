@@ -1128,6 +1128,206 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
         "❌ <b>Telegram rechazó la operación</b>": "❌ <b>Telegram rejected the operation</b>",
         "❌ <b>Ha ocurrido un error inesperado</b>": "❌ <b>An unexpected error occurred</b>",
         "Revisa los logs del contenedor.": "Check the container logs.",
+        # 1.6.0 · pantallas ampliadas del sistema.
+        "🧮 <b>Historial de paridad</b>": "🧮 <b>Parity history</b>",
+        "La API no ha devuelto ninguna comprobación registrada.": (
+            "The API returned no recorded checks."
+        ),
+        "sin fecha": "no date",
+        "no correctiva": "non-correcting",
+        "correctiva": "correcting",
+        "🔔 <b>Notificaciones</b>": "🔔 <b>Notifications</b>",
+        "No hay notificaciones en esta vista. ✅": "No notifications in this view. ✅",
+        "Archivadas: ": "Archived: ",
+        "Importancia: ": "Importance: ",
+        "🪪 <b>Licencia y flash</b>": "🪪 <b>License and flash</b>",
+        "La API no ha devuelto información de licencia ni del dispositivo flash.": (
+            "The API returned no license or flash device information."
+        ),
+        "Caduca: ": "Expires: ",
+        "Actualizaciones hasta: ": "Updates until: ",
+        "Estás en periodo de prueba: revisa la fecha de caducidad.": (
+            "You are in the trial period: check the expiry date."
+        ),
+        "Licencia: no disponible.": "License: not available.",
+        "Dispositivo flash": "Flash device",
+        "Producto: ": "Product: ",
+        "Fabricante: ": "Vendor: ",
+        "No se pudo leer el dispositivo flash.": "The flash device could not be read.",
+        "🔌 <b>Plugins</b>": "🔌 <b>Plugins</b>",
+        "No hay plugins instalados o la API no los ha devuelto.": (
+            "No plugins installed or the API returned none."
+        ),
+        "🧩 <b>Servicios</b>": "🧩 <b>Services</b>",
+        "La API no ha devuelto servicios.": "The API returned no services.",
+        "Activos: ": "Active: ",
+        "La API no ha devuelto interfaces de red.": "The API returned no network interfaces.",
+        "Accesos": "Access",
+        "📜 <b>Logs</b>": "📜 <b>Logs</b>",
+        "La API no ha devuelto archivos de log.": "The API returned no log files.",
+        "Elige un log para ver las últimas líneas.": "Pick a log to see the latest lines.",
+        "El log está vacío.": "The log is empty.",
+        "📥 Enviar como archivo": "📥 Send as file",
+        "Temperaturas y tráfico": "Temperatures and traffic",
+        "No hay sensores de temperatura configurados.": "No temperature sensors configured.",
+        "Actívalos en Settings → Temperature Settings.": (
+            "Enable them in Settings → Temperature Settings."
+        ),
+        "Tráfico de red": "Network traffic",
+        "Fuera de rango: ": "Out of range: ",
+        "Claves de API": "API keys",
+        "No hay claves de API creadas.": "No API keys created.",
+        "El bot solo crea claves con rol VIEWER (solo lectura).": (
+            "The bot only creates keys with the VIEWER role (read-only)."
+        ),
+        "Identidad del servidor": "Server identity",
+        "La API no ha devuelto la identidad del servidor.": (
+            "The API returned no server identity."
+        ),
+        "🩺 <b>Diagnóstico</b>": "🩺 <b>Diagnostics</b>",
+        "No se han detectado incidencias.": "No issues detected.",
+        "Últimas líneas del syslog": "Latest syslog lines",
+        "Docker · mantenimiento": "Docker · maintenance",
+        "Actualizaciones pendientes: ": "Pending updates: ",
+        "Conflictos de puertos": "Port conflicts",
+        "Sin conflictos de puertos detectados.": "No port conflicts detected.",
+        "Docker · tamaños": "Docker · sizes",
+        "No hay datos de tamaño disponibles.": "No size data available.",
+        "Total de logs: ": "Total logs: ",
+        "Ese log ya no existe.": "That log no longer exists.",
+        "Ese share ya no existe.": "That share no longer exists.",
+        "Ese remoto ya no existe.": "That remote no longer exists.",
+        "Ese disco ya no está en el array.": "That disk is no longer in the array.",
+        "No hay remotos de rclone configurados.": "No rclone remotes configured.",
+        "💾 <b>Backup del flash</b>": "💾 <b>Flash backup</b>",
+        "🔑 <b>Clave creada</b>": "🔑 <b>Key created</b>",
+        "⚠️ Cópiala ahora: no se volverá a mostrar.": (
+            "⚠️ Copy it now: it will not be shown again."
+        ),
+        "🗑 <b>Clave de API borrada.</b>": "🗑 <b>API key deleted.</b>",
+        "🔐 <b>Iniciar array cifrado</b>": "🔐 <b>Start encrypted array</b>",
+        "Envía la contraseña del array. La usaré una sola vez, borraré tu mensaje y no la guardaré.": (
+            "Send the array password. I will use it once, delete your message and never store it."
+        ),
+        "Se usará la contraseña una sola vez y no se guardará. He borrado tu mensaje con la contraseña.": (
+            "The password will be used once and not stored. I have deleted your message containing it."
+        ),
+        "✅ <b>Array cifrado iniciado.</b>": "✅ <b>Encrypted array started.</b>",
+        "🧮 <b>Comprobación de paridad correctiva</b>": "🧮 <b>Correcting parity check</b>",
+        "🧮 <b>Comprobación de paridad no correctiva</b>": (
+            "🧮 <b>Non-correcting parity check</b>"
+        ),
+        "Se escribirán las correcciones en paridad. Puede tardar horas con carga de E/S elevada.": (
+            "Corrections will be written to parity. It can take hours with heavy I/O load."
+        ),
+        "Solo lee los discos y compara. Puede tardar horas con carga de E/S elevada.": (
+            "It only reads the disks and compares. It can take hours with heavy I/O load."
+        ),
+        "🧮 <b>Comprobación de paridad correctiva iniciada.</b>": (
+            "🧮 <b>Correcting parity check started.</b>"
+        ),
+        "🧮 <b>Comprobación de paridad no correctiva iniciada.</b>": (
+            "🧮 <b>Non-correcting parity check started.</b>"
+        ),
+        "Esa notificación ya no existe.": "That notification no longer exists.",
+        "Acción de notificación no válida.": "Invalid notification action.",
+        "➕ <b>Instalar plugin</b>": "➕ <b>Install plugin</b>",
+        "🔌 <b>Instalar plugin</b>": "🔌 <b>Install plugin</b>",
+        "❌ Envía una URL http(s) al archivo .plg.": (
+            "❌ Send an http(s) URL to the .plg file."
+        ),
+        "✅ <b>Plugin instalado.</b> Revisa si Unraid pide reiniciar.": (
+            "✅ <b>Plugin installed.</b> Check whether Unraid asks for a reboot."
+        ),
+        "📝 <b>Crear notificación en Unraid</b>": "📝 <b>Create Unraid notification</b>",
+        "✅ <b>Notificación creada en Unraid</b>": "✅ <b>Notification created in Unraid</b>",
+        "No sé qué hacer con ese texto.": "I don't know what to do with that text.",
+        "No he recibido ningún texto. Vuelve a intentarlo.": (
+            "I received no text. Please try again."
+        ),
+        "Umbrales de temperatura": "Temperature thresholds",
+        "✅ <b>Umbrales actualizados en Unraid</b>": "✅ <b>Thresholds updated in Unraid</b>",
+        "❌ El nombre no puede estar vacío.": "❌ The name cannot be empty.",
+        "🧹 Mantenimiento": "🧹 Maintenance",
+        "📦 Tamaños": "📦 Sizes",
+        "🕓 Historial paridad": "🕓 Parity history",
+        "🪪 Licencia": "🪪 License",
+        "🧩 Servicios": "🧩 Services",
+        "🩺 Diagnóstico": "🩺 Diagnostics",
+        "🏷️ Identidad": "🏷️ Identity",
+        "🔑 Claves API": "🔑 API keys",
+        "🌡️ Temperaturas": "🌡️ Temperatures",
+        "Elige el tipo:": "Choose the type:",
+        "✅ Correctiva (escribe)": "✅ Correcting (writes)",
+        "👁️ No correctiva (solo lee)": "👁️ Non-correcting (read only)",
+        "🗂 Ver archivadas": "🗂 View archived",
+        "📥 Ver sin leer": "📥 View unread",
+        "📋 Todas": "📋 All",
+        "🔄 Recargar": "🔄 Reload",
+        "🔙 Logs": "🔙 Logs",
+        "🔙 Licencia": "🔙 License",
+        "⚙️ Umbrales": "⚙️ Thresholds",
+        "🔧 Configurar": "🔧 Configure",
+        "➕ Crear clave VIEWER": "➕ Create VIEWER key",
+        "✏️ Editar nombre": "✏️ Edit name",
+        "📂 Montar": "📂 Mount",
+        "📤 Desmontar": "📤 Unmount",
+        "🔙 Notificaciones": "🔙 Notifications",
+        "🔙 Paridad": "🔙 Parity",
+        "🧮 Paridad actual": "🧮 Current parity",
+        "Configurar umbrales en Unraid": "Configure thresholds in Unraid",
+        "❌ No he encontrado valores. Usa por ejemplo ": (
+            "❌ I found no values. For example: "
+        ),
+        "❌ Valor no válido para ": "❌ Invalid value for ",
+        "Crear clave de API": "Create API key",
+        "Envía un nombre para la clave. Se creará con rol <b>VIEWER</b> (solo lectura), que es lo que necesita el bot.": (
+            "Send a name for the key. It will be created with the <b>VIEWER</b> role "
+            "(read-only), which is all the bot needs."
+        ),
+        "La clave se mostrará una sola vez.": "The key will be shown only once.",
+        "Esa clave ya no existe.": "That key no longer exists.",
+        "🗑 <b>Borrar la clave ": "🗑 <b>Delete the key ",
+        "Cualquier cliente que la use dejará de funcionar.": (
+            "Any client using it will stop working."
+        ),
+        "Editar identidad": "Edit identity",
+        "Envía el nombre y, si quieres, un comentario separado por <code>|</code>:": (
+            "Send the name and, optionally, a comment separated by <code>|</code>:"
+        ),
+        "🩺 Últimas 200 líneas del syslog": "🩺 Last 200 syslog lines",
+        "📜 Últimas 1000 líneas de ": "📜 Last 1000 lines of ",
+        "Crea uno en <i>Settings → Backup/Restore Flash Drive</i> y vuelve aquí.": (
+            "Create one in <i>Settings → Backup/Restore Flash Drive</i> and come back."
+        ),
+        "Elige el remoto de destino. Se copiará <code>/boot</code>.": (
+            "Choose the destination remote. <code>/boot</code> will be copied."
+        ),
+        "Se copiará el contenido de <code>/boot</code> al remoto. Puede tardar varios minutos.": (
+            "The contents of <code>/boot</code> will be copied to the remote. "
+            "It can take several minutes."
+        ),
+        "💾 <b>Backup del flash a ": "💾 <b>Flash backup to ",
+        "✅ <b>Backup del flash lanzado a ": "✅ <b>Flash backup started to ",
+        "❌ No se pudo enviar el archivo: ": "❌ Could not send the file: ",
+        "📂 <b>Montar ": "📂 <b>Mount ",
+        "📤 <b>Desmontar ": "📤 <b>Unmount ",
+        "El disco dejará de estar disponible hasta que lo vuelvas a montar.": (
+            "The disk will be unavailable until you mount it again."
+        ),
+        "No encuentro ese disco. Usa /smart sin argumentos.": (
+            "I can't find that disk. Use /smart without arguments."
+        ),
+        "Ese log ya no existe. Vuelve a abrir la lista.": (
+            "That log no longer exists. Reopen the list."
+        ),
+        "CPU: aviso ": "CPU: warning ",
+        "Discos: aviso ": "Disks: warning ",
+        "Estos son los umbrales que usa el bot. Unraid mantiene los suyos en Settings → Temperature Settings.": (
+            "These are the thresholds the bot uses. Unraid keeps its own in "
+            "Settings → Temperature Settings."
+        ),
+        "Ahora mismo: CPU ": "Right now: CPU ",
     },
     "fr": {
         "Array casi lleno": "Array presque plein",
@@ -1440,6 +1640,225 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
             "❌ <b>Une erreur inattendue s'est produite</b>"
         ),
         "Revisa los logs del contenedor.": "Consultez les journaux du conteneur.",
+        # 1.6.0 · écrans étendus du système.
+        "🧮 <b>Historial de paridad</b>": "🧮 <b>Historique de parité</b>",
+        "La API no ha devuelto ninguna comprobación registrada.": (
+            "L'API n'a renvoyé aucune vérification enregistrée."
+        ),
+        "sin fecha": "sans date",
+        "no correctiva": "non corrective",
+        "correctiva": "corrective",
+        "🔔 <b>Notificaciones</b>": "🔔 <b>Notifications</b>",
+        "No hay notificaciones en esta vista. ✅": "Aucune notification dans cette vue. ✅",
+        "Archivadas: ": "Archivées : ",
+        "Importancia: ": "Importance : ",
+        "🪪 <b>Licencia y flash</b>": "🪪 <b>Licence et flash</b>",
+        "La API no ha devuelto información de licencia ni del dispositivo flash.": (
+            "L'API n'a renvoyé aucune information de licence ni de périphérique flash."
+        ),
+        "Caduca: ": "Expire : ",
+        "Actualizaciones hasta: ": "Mises à jour jusqu'au : ",
+        "Estás en periodo de prueba: revisa la fecha de caducidad.": (
+            "Vous êtes en période d'essai : vérifiez la date d'expiration."
+        ),
+        "Licencia: no disponible.": "Licence : non disponible.",
+        "Dispositivo flash": "Périphérique flash",
+        "Producto: ": "Produit : ",
+        "Fabricante: ": "Fabricant : ",
+        "No se pudo leer el dispositivo flash.": "Impossible de lire le périphérique flash.",
+        "🔌 <b>Plugins</b>": "🔌 <b>Plugins</b>",
+        "No hay plugins instalados o la API no los ha devuelto.": (
+            "Aucun plugin installé ou l'API n'en a renvoyé aucun."
+        ),
+        "🧩 <b>Servicios</b>": "🧩 <b>Services</b>",
+        "La API no ha devuelto servicios.": "L'API n'a renvoyé aucun service.",
+        "Activos: ": "Actifs : ",
+        "La API no ha devuelto interfaces de red.": (
+            "L'API n'a renvoyé aucune interface réseau."
+        ),
+        "Accesos": "Accès",
+        "📜 <b>Logs</b>": "📜 <b>Journaux</b>",
+        "La API no ha devuelto archivos de log.": (
+            "L'API n'a renvoyé aucun fichier journal."
+        ),
+        "Elige un log para ver las últimas líneas.": (
+            "Choisissez un journal pour voir les dernières lignes."
+        ),
+        "El log está vacío.": "Le journal est vide.",
+        "📥 Enviar como archivo": "📥 Envoyer comme fichier",
+        "Temperaturas y tráfico": "Températures et trafic",
+        "No hay sensores de temperatura configurados.": (
+            "Aucun capteur de température configuré."
+        ),
+        "Actívalos en Settings → Temperature Settings.": (
+            "Activez-les dans Settings → Temperature Settings."
+        ),
+        "Tráfico de red": "Trafic réseau",
+        "Fuera de rango: ": "Hors plage : ",
+        "Claves de API": "Clés API",
+        "No hay claves de API creadas.": "Aucune clé API créée.",
+        "El bot solo crea claves con rol VIEWER (solo lectura).": (
+            "Le bot ne crée que des clés avec le rôle VIEWER (lecture seule)."
+        ),
+        "Identidad del servidor": "Identité du serveur",
+        "La API no ha devuelto la identidad del servidor.": (
+            "L'API n'a renvoyé aucune identité de serveur."
+        ),
+        "🩺 <b>Diagnóstico</b>": "🩺 <b>Diagnostic</b>",
+        "No se han detectado incidencias.": "Aucun incident détecté.",
+        "Últimas líneas del syslog": "Dernières lignes du syslog",
+        "Docker · mantenimiento": "Docker · maintenance",
+        "Actualizaciones pendientes: ": "Mises à jour en attente : ",
+        "Conflictos de puertos": "Conflits de ports",
+        "Sin conflictos de puertos detectados.": "Aucun conflit de ports détecté.",
+        "Docker · tamaños": "Docker · tailles",
+        "No hay datos de tamaño disponibles.": "Aucune donnée de taille disponible.",
+        "Total de logs: ": "Total des journaux : ",
+        "Ese log ya no existe.": "Ce journal n'existe plus.",
+        "Ese share ya no existe.": "Ce partage n'existe plus.",
+        "Ese remoto ya no existe.": "Ce dépôt distant n'existe plus.",
+        "Ese disco ya no está en el array.": "Ce disque n'est plus dans l'array.",
+        "No hay remotos de rclone configurados.": "Aucun dépôt distant rclone configuré.",
+        "💾 <b>Backup del flash</b>": "💾 <b>Sauvegarde du flash</b>",
+        "🔑 <b>Clave creada</b>": "🔑 <b>Clé créée</b>",
+        "⚠️ Cópiala ahora: no se volverá a mostrar.": (
+            "⚠️ Copiez-la maintenant : elle ne sera plus affichée."
+        ),
+        "🗑 <b>Clave de API borrada.</b>": "🗑 <b>Clé API supprimée.</b>",
+        "🔐 <b>Iniciar array cifrado</b>": "🔐 <b>Démarrer l'array chiffré</b>",
+        "Envía la contraseña del array. La usaré una sola vez, borraré tu mensaje y no la guardaré.": (
+            "Envoyez le mot de passe de l'array. Je l'utiliserai une seule fois, "
+            "je supprimerai votre message et je ne le stockerai pas."
+        ),
+        "Se usará la contraseña una sola vez y no se guardará. He borrado tu mensaje con la contraseña.": (
+            "Le mot de passe sera utilisé une seule fois et ne sera pas stocké. "
+            "J'ai supprimé votre message le contenant."
+        ),
+        "✅ <b>Array cifrado iniciado.</b>": "✅ <b>Array chiffré démarré.</b>",
+        "🧮 <b>Comprobación de paridad correctiva</b>": (
+            "🧮 <b>Vérification de parité corrective</b>"
+        ),
+        "🧮 <b>Comprobación de paridad no correctiva</b>": (
+            "🧮 <b>Vérification de parité non corrective</b>"
+        ),
+        "Se escribirán las correcciones en paridad. Puede tardar horas con carga de E/S elevada.": (
+            "Les corrections seront écrites sur la parité. Cela peut prendre des heures "
+            "avec une charge d'E/S élevée."
+        ),
+        "Solo lee los discos y compara. Puede tardar horas con carga de E/S elevada.": (
+            "Elle lit seulement les disques et compare. Cela peut prendre des heures "
+            "avec une charge d'E/S élevée."
+        ),
+        "🧮 <b>Comprobación de paridad correctiva iniciada.</b>": (
+            "🧮 <b>Vérification de parité corrective lancée.</b>"
+        ),
+        "🧮 <b>Comprobación de paridad no correctiva iniciada.</b>": (
+            "🧮 <b>Vérification de parité non corrective lancée.</b>"
+        ),
+        "Esa notificación ya no existe.": "Cette notification n'existe plus.",
+        "Acción de notificación no válida.": "Action de notification invalide.",
+        "➕ <b>Instalar plugin</b>": "➕ <b>Installer un plugin</b>",
+        "🔌 <b>Instalar plugin</b>": "🔌 <b>Installer un plugin</b>",
+        "❌ Envía una URL http(s) al archivo .plg.": (
+            "❌ Envoyez une URL http(s) vers le fichier .plg."
+        ),
+        "✅ <b>Plugin instalado.</b> Revisa si Unraid pide reiniciar.": (
+            "✅ <b>Plugin installé.</b> Vérifiez si Unraid demande un redémarrage."
+        ),
+        "📝 <b>Crear notificación en Unraid</b>": "📝 <b>Créer une notification Unraid</b>",
+        "✅ <b>Notificación creada en Unraid</b>": (
+            "✅ <b>Notification créée dans Unraid</b>"
+        ),
+        "No sé qué hacer con ese texto.": "Je ne sais pas quoi faire de ce texte.",
+        "No he recibido ningún texto. Vuelve a intentarlo.": (
+            "Je n'ai reçu aucun texte. Réessayez."
+        ),
+        "Umbrales de temperatura": "Seuils de température",
+        "✅ <b>Umbrales actualizados en Unraid</b>": (
+            "✅ <b>Seuils mis à jour dans Unraid</b>"
+        ),
+        "❌ El nombre no puede estar vacío.": "❌ Le nom ne peut pas être vide.",
+        "🧹 Mantenimiento": "🧹 Maintenance",
+        "📦 Tamaños": "📦 Tailles",
+        "🕓 Historial paridad": "🕓 Historique parité",
+        "🪪 Licencia": "🪪 Licence",
+        "🧩 Servicios": "🧩 Services",
+        "🩺 Diagnóstico": "🩺 Diagnostic",
+        "🏷️ Identidad": "🏷️ Identité",
+        "🔑 Claves API": "🔑 Clés API",
+        "🌡️ Temperaturas": "🌡️ Températures",
+        "Elige el tipo:": "Choisissez le type :",
+        "✅ Correctiva (escribe)": "✅ Corrective (écrit)",
+        "👁️ No correctiva (solo lee)": "👁️ Non corrective (lecture seule)",
+        "🗂 Ver archivadas": "🗂 Voir archivées",
+        "📥 Ver sin leer": "📥 Voir non lues",
+        "📋 Todas": "📋 Toutes",
+        "🔄 Recargar": "🔄 Recharger",
+        "🔙 Logs": "🔙 Journaux",
+        "🔙 Licencia": "🔙 Licence",
+        "⚙️ Umbrales": "⚙️ Seuils",
+        "🔧 Configurar": "🔧 Configurer",
+        "➕ Crear clave VIEWER": "➕ Créer une clé VIEWER",
+        "✏️ Editar nombre": "✏️ Modifier le nom",
+        "📂 Montar": "📂 Monter",
+        "📤 Desmontar": "📤 Démonter",
+        "🔙 Notificaciones": "🔙 Notifications",
+        "🔙 Paridad": "🔙 Parité",
+        "🧮 Paridad actual": "🧮 Parité actuelle",
+        "Configurar umbrales en Unraid": "Configurer les seuils dans Unraid",
+        "❌ No he encontrado valores. Usa por ejemplo ": (
+            "❌ Je n'ai trouvé aucune valeur. Par exemple : "
+        ),
+        "❌ Valor no válido para ": "❌ Valeur invalide pour ",
+        "Crear clave de API": "Créer une clé API",
+        "Envía un nombre para la clave. Se creará con rol <b>VIEWER</b> (solo lectura), que es lo que necesita el bot.": (
+            "Envoyez un nom pour la clé. Elle sera créée avec le rôle <b>VIEWER</b> "
+            "(lecture seule), ce dont le bot a besoin."
+        ),
+        "La clave se mostrará una sola vez.": "La clé ne sera affichée qu'une seule fois.",
+        "Esa clave ya no existe.": "Cette clé n'existe plus.",
+        "🗑 <b>Borrar la clave ": "🗑 <b>Supprimer la clé ",
+        "Cualquier cliente que la use dejará de funcionar.": (
+            "Tout client qui l'utilise cessera de fonctionner."
+        ),
+        "Editar identidad": "Modifier l'identité",
+        "Envía el nombre y, si quieres, un comentario separado por <code>|</code>:": (
+            "Envoyez le nom et, si vous le souhaitez, un commentaire séparé par "
+            "<code>|</code> :"
+        ),
+        "🩺 Últimas 200 líneas del syslog": "🩺 200 dernières lignes du syslog",
+        "📜 Últimas 1000 líneas de ": "📜 1000 dernières lignes de ",
+        "Crea uno en <i>Settings → Backup/Restore Flash Drive</i> y vuelve aquí.": (
+            "Créez-en un dans <i>Settings → Backup/Restore Flash Drive</i> puis revenez ici."
+        ),
+        "Elige el remoto de destino. Se copiará <code>/boot</code>.": (
+            "Choisissez le dépôt distant de destination. <code>/boot</code> sera copié."
+        ),
+        "Se copiará el contenido de <code>/boot</code> al remoto. Puede tardar varios minutos.": (
+            "Le contenu de <code>/boot</code> sera copié vers le dépôt distant. "
+            "Cela peut prendre plusieurs minutes."
+        ),
+        "💾 <b>Backup del flash a ": "💾 <b>Sauvegarde du flash vers ",
+        "✅ <b>Backup del flash lanzado a ": "✅ <b>Sauvegarde du flash lancée vers ",
+        "❌ No se pudo enviar el archivo: ": "❌ Impossible d'envoyer le fichier : ",
+        "📂 <b>Montar ": "📂 <b>Monter ",
+        "📤 <b>Desmontar ": "📤 <b>Démonter ",
+        "El disco dejará de estar disponible hasta que lo vuelvas a montar.": (
+            "Le disque ne sera plus disponible avant que vous ne le montiez à nouveau."
+        ),
+        "No encuentro ese disco. Usa /smart sin argumentos.": (
+            "Je ne trouve pas ce disque. Utilisez /smart sans argument."
+        ),
+        "Ese log ya no existe. Vuelve a abrir la lista.": (
+            "Ce journal n'existe plus. Rouvrez la liste."
+        ),
+        "CPU: aviso ": "CPU : alerte ",
+        "Discos: aviso ": "Disques : alerte ",
+        "Estos son los umbrales que usa el bot. Unraid mantiene los suyos en Settings → Temperature Settings.": (
+            "Ce sont les seuils utilisés par le bot. Unraid conserve les siens dans "
+            "Settings → Temperature Settings."
+        ),
+        "Ahora mismo: CPU ": "En ce moment : CPU ",
     },
     "it": {
         "Array casi lleno": "Array quasi pieno",
@@ -1752,6 +2171,223 @@ EXTRA_TRANSLATIONS: dict[str, dict[str, str]] = {
             "❌ <b>Si è verificato un errore imprevisto</b>"
         ),
         "Revisa los logs del contenedor.": "Controlla i log del container.",
+        # 1.6.0 · schermate estese del sistema.
+        "🧮 <b>Historial de paridad</b>": "🧮 <b>Storico parità</b>",
+        "La API no ha devuelto ninguna comprobación registrada.": (
+            "L'API non ha restituito controlli registrati."
+        ),
+        "sin fecha": "senza data",
+        "no correctiva": "non correttiva",
+        "correctiva": "correttiva",
+        "🔔 <b>Notificaciones</b>": "🔔 <b>Notifiche</b>",
+        "No hay notificaciones en esta vista. ✅": "Nessuna notifica in questa vista. ✅",
+        "Archivadas: ": "Archiviate: ",
+        "Importancia: ": "Importanza: ",
+        "🪪 <b>Licencia y flash</b>": "🪪 <b>Licenza e flash</b>",
+        "La API no ha devuelto información de licencia ni del dispositivo flash.": (
+            "L'API non ha restituito informazioni su licenza o dispositivo flash."
+        ),
+        "Caduca: ": "Scade: ",
+        "Actualizaciones hasta: ": "Aggiornamenti fino al: ",
+        "Estás en periodo de prueba: revisa la fecha de caducidad.": (
+            "Sei in periodo di prova: controlla la data di scadenza."
+        ),
+        "Licencia: no disponible.": "Licenza: non disponibile.",
+        "Dispositivo flash": "Dispositivo flash",
+        "Producto: ": "Prodotto: ",
+        "Fabricante: ": "Produttore: ",
+        "No se pudo leer el dispositivo flash.": (
+            "Impossibile leggere il dispositivo flash."
+        ),
+        "🔌 <b>Plugins</b>": "🔌 <b>Plugin</b>",
+        "No hay plugins instalados o la API no los ha devuelto.": (
+            "Nessun plugin installato o l'API non ne ha restituiti."
+        ),
+        "🧩 <b>Servicios</b>": "🧩 <b>Servizi</b>",
+        "La API no ha devuelto servicios.": "L'API non ha restituito servizi.",
+        "Activos: ": "Attivi: ",
+        "La API no ha devuelto interfaces de red.": (
+            "L'API non ha restituito interfacce di rete."
+        ),
+        "Accesos": "Accessi",
+        "📜 <b>Logs</b>": "📜 <b>Log</b>",
+        "La API no ha devuelto archivos de log.": (
+            "L'API non ha restituito file di log."
+        ),
+        "Elige un log para ver las últimas líneas.": (
+            "Scegli un log per vedere le ultime righe."
+        ),
+        "El log está vacío.": "Il log è vuoto.",
+        "📥 Enviar como archivo": "📥 Invia come file",
+        "Temperaturas y tráfico": "Temperature e traffico",
+        "No hay sensores de temperatura configurados.": (
+            "Nessun sensore di temperatura configurato."
+        ),
+        "Actívalos en Settings → Temperature Settings.": (
+            "Attivali in Settings → Temperature Settings."
+        ),
+        "Tráfico de red": "Traffico di rete",
+        "Fuera de rango: ": "Fuori intervallo: ",
+        "Claves de API": "Chiavi API",
+        "No hay claves de API creadas.": "Nessuna chiave API creata.",
+        "El bot solo crea claves con rol VIEWER (solo lectura).": (
+            "Il bot crea solo chiavi con ruolo VIEWER (sola lettura)."
+        ),
+        "Identidad del servidor": "Identità del server",
+        "La API no ha devuelto la identidad del servidor.": (
+            "L'API non ha restituito l'identità del server."
+        ),
+        "🩺 <b>Diagnóstico</b>": "🩺 <b>Diagnostica</b>",
+        "No se han detectado incidencias.": "Nessun problema rilevato.",
+        "Últimas líneas del syslog": "Ultime righe del syslog",
+        "Docker · mantenimiento": "Docker · manutenzione",
+        "Actualizaciones pendientes: ": "Aggiornamenti in sospeso: ",
+        "Conflictos de puertos": "Conflitti di porte",
+        "Sin conflictos de puertos detectados.": "Nessun conflitto di porte rilevato.",
+        "Docker · tamaños": "Docker · dimensioni",
+        "No hay datos de tamaño disponibles.": "Nessun dato sulle dimensioni disponibile.",
+        "Total de logs: ": "Log totali: ",
+        "Ese log ya no existe.": "Quel log non esiste più.",
+        "Ese share ya no existe.": "Quella condivisione non esiste più.",
+        "Ese remoto ya no existe.": "Quel remoto non esiste più.",
+        "Ese disco ya no está en el array.": "Quel disco non è più nell'array.",
+        "No hay remotos de rclone configurados.": "Nessun remoto rclone configurato.",
+        "💾 <b>Backup del flash</b>": "💾 <b>Backup del flash</b>",
+        "🔑 <b>Clave creada</b>": "🔑 <b>Chiave creata</b>",
+        "⚠️ Cópiala ahora: no se volverá a mostrar.": (
+            "⚠️ Copiala ora: non verrà più mostrata."
+        ),
+        "🗑 <b>Clave de API borrada.</b>": "🗑 <b>Chiave API eliminata.</b>",
+        "🔐 <b>Iniciar array cifrado</b>": "🔐 <b>Avvia array cifrato</b>",
+        "Envía la contraseña del array. La usaré una sola vez, borraré tu mensaje y no la guardaré.": (
+            "Invia la password dell'array. La userò una sola volta, eliminerò il tuo "
+            "messaggio e non la salverò."
+        ),
+        "Se usará la contraseña una sola vez y no se guardará. He borrado tu mensaje con la contraseña.": (
+            "La password verrà usata una sola volta e non verrà salvata. "
+            "Ho eliminato il tuo messaggio che la conteneva."
+        ),
+        "✅ <b>Array cifrado iniciado.</b>": "✅ <b>Array cifrato avviato.</b>",
+        "🧮 <b>Comprobación de paridad correctiva</b>": (
+            "🧮 <b>Controllo di parità correttivo</b>"
+        ),
+        "🧮 <b>Comprobación de paridad no correctiva</b>": (
+            "🧮 <b>Controllo di parità non correttivo</b>"
+        ),
+        "Se escribirán las correcciones en paridad. Puede tardar horas con carga de E/S elevada.": (
+            "Le correzioni verranno scritte sulla parità. Può richiedere ore con "
+            "carico I/O elevato."
+        ),
+        "Solo lee los discos y compara. Puede tardar horas con carga de E/S elevada.": (
+            "Legge solo i dischi e confronta. Può richiedere ore con carico I/O elevato."
+        ),
+        "🧮 <b>Comprobación de paridad correctiva iniciada.</b>": (
+            "🧮 <b>Controllo di parità correttivo avviato.</b>"
+        ),
+        "🧮 <b>Comprobación de paridad no correctiva iniciada.</b>": (
+            "🧮 <b>Controllo di parità non correttivo avviato.</b>"
+        ),
+        "Esa notificación ya no existe.": "Quella notifica non esiste più.",
+        "Acción de notificación no válida.": "Azione di notifica non valida.",
+        "➕ <b>Instalar plugin</b>": "➕ <b>Installa plugin</b>",
+        "🔌 <b>Instalar plugin</b>": "🔌 <b>Installa plugin</b>",
+        "❌ Envía una URL http(s) al archivo .plg.": (
+            "❌ Invia un URL http(s) al file .plg."
+        ),
+        "✅ <b>Plugin instalado.</b> Revisa si Unraid pide reiniciar.": (
+            "✅ <b>Plugin installato.</b> Controlla se Unraid richiede un riavvio."
+        ),
+        "📝 <b>Crear notificación en Unraid</b>": "📝 <b>Crea notifica in Unraid</b>",
+        "✅ <b>Notificación creada en Unraid</b>": "✅ <b>Notifica creata in Unraid</b>",
+        "No sé qué hacer con ese texto.": "Non so cosa fare con quel testo.",
+        "No he recibido ningún texto. Vuelve a intentarlo.": (
+            "Non ho ricevuto alcun testo. Riprova."
+        ),
+        "Umbrales de temperatura": "Soglie di temperatura",
+        "✅ <b>Umbrales actualizados en Unraid</b>": (
+            "✅ <b>Soglie aggiornate in Unraid</b>"
+        ),
+        "❌ El nombre no puede estar vacío.": "❌ Il nome non può essere vuoto.",
+        "🧹 Mantenimiento": "🧹 Manutenzione",
+        "📦 Tamaños": "📦 Dimensioni",
+        "🕓 Historial paridad": "🕓 Storico parità",
+        "🪪 Licencia": "🪪 Licenza",
+        "🧩 Servicios": "🧩 Servizi",
+        "🩺 Diagnóstico": "🩺 Diagnostica",
+        "🏷️ Identidad": "🏷️ Identità",
+        "🔑 Claves API": "🔑 Chiavi API",
+        "🌡️ Temperaturas": "🌡️ Temperature",
+        "Elige el tipo:": "Scegli il tipo:",
+        "✅ Correctiva (escribe)": "✅ Correttiva (scrive)",
+        "👁️ No correctiva (solo lee)": "👁️ Non correttiva (sola lettura)",
+        "🗂 Ver archivadas": "🗂 Vedi archiviate",
+        "📥 Ver sin leer": "📥 Vedi non lette",
+        "📋 Todas": "📋 Tutte",
+        "🔄 Recargar": "🔄 Ricarica",
+        "🔙 Logs": "🔙 Log",
+        "🔙 Licencia": "🔙 Licenza",
+        "⚙️ Umbrales": "⚙️ Soglie",
+        "🔧 Configurar": "🔧 Configura",
+        "➕ Crear clave VIEWER": "➕ Crea chiave VIEWER",
+        "✏️ Editar nombre": "✏️ Modifica nome",
+        "📂 Montar": "📂 Monta",
+        "📤 Desmontar": "📤 Smonta",
+        "🔙 Notificaciones": "🔙 Notifiche",
+        "🔙 Paridad": "🔙 Parità",
+        "🧮 Paridad actual": "🧮 Parità attuale",
+        "Configurar umbrales en Unraid": "Configura le soglie in Unraid",
+        "❌ No he encontrado valores. Usa por ejemplo ": (
+            "❌ Non ho trovato valori. Ad esempio: "
+        ),
+        "❌ Valor no válido para ": "❌ Valore non valido per ",
+        "Crear clave de API": "Crea chiave API",
+        "Envía un nombre para la clave. Se creará con rol <b>VIEWER</b> (solo lectura), que es lo que necesita el bot.": (
+            "Invia un nome per la chiave. Verrà creata con ruolo <b>VIEWER</b> "
+            "(sola lettura), tutto ciò che serve al bot."
+        ),
+        "La clave se mostrará una sola vez.": "La chiave verrà mostrata una sola volta.",
+        "Esa clave ya no existe.": "Quella chiave non esiste più.",
+        "🗑 <b>Borrar la clave ": "🗑 <b>Elimina la chiave ",
+        "Cualquier cliente que la use dejará de funcionar.": (
+            "Qualsiasi client che la usa smetterà di funzionare."
+        ),
+        "Editar identidad": "Modifica identità",
+        "Envía el nombre y, si quieres, un comentario separado por <code>|</code>:": (
+            "Invia il nome e, se vuoi, un commento separato da <code>|</code>:"
+        ),
+        "🩺 Últimas 200 líneas del syslog": "🩺 Ultime 200 righe del syslog",
+        "📜 Últimas 1000 líneas de ": "📜 Ultime 1000 righe di ",
+        "Crea uno en <i>Settings → Backup/Restore Flash Drive</i> y vuelve aquí.": (
+            "Creane uno in <i>Settings → Backup/Restore Flash Drive</i> e torna qui."
+        ),
+        "Elige el remoto de destino. Se copiará <code>/boot</code>.": (
+            "Scegli il remoto di destinazione. Verrà copiato <code>/boot</code>."
+        ),
+        "Se copiará el contenido de <code>/boot</code> al remoto. Puede tardar varios minutos.": (
+            "Il contenuto di <code>/boot</code> verrà copiato sul remoto. "
+            "Può richiedere diversi minuti."
+        ),
+        "💾 <b>Backup del flash a ": "💾 <b>Backup del flash su ",
+        "✅ <b>Backup del flash lanzado a ": "✅ <b>Backup del flash avviato su ",
+        "❌ No se pudo enviar el archivo: ": "❌ Impossibile inviare il file: ",
+        "📂 <b>Montar ": "📂 <b>Monta ",
+        "📤 <b>Desmontar ": "📤 <b>Smonta ",
+        "El disco dejará de estar disponible hasta que lo vuelvas a montar.": (
+            "Il disco non sarà disponibile finché non lo monti di nuovo."
+        ),
+        "No encuentro ese disco. Usa /smart sin argumentos.": (
+            "Non trovo quel disco. Usa /smart senza argomenti."
+        ),
+        "Ese log ya no existe. Vuelve a abrir la lista.": (
+            "Quel log non esiste più. Riapri la lista."
+        ),
+        "CPU: aviso ": "CPU: avviso ",
+        "Discos: aviso ": "Dischi: avviso ",
+        "Estos son los umbrales que usa el bot. Unraid mantiene los suyos en Settings → Temperature Settings.": (
+            "Queste sono le soglie usate dal bot. Unraid mantiene le sue in "
+            "Settings → Temperature Settings."
+        ),
+        "Ahora mismo: CPU ": "Adesso: CPU ",
     },
 }
 

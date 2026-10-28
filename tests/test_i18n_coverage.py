@@ -146,6 +146,103 @@ REQUIRED_STRINGS_V152 = (
 )
 
 
+# Cadenas introducidas en 1.6.0: pantallas ampliadas del sistema.
+REQUIRED_STRINGS_V160 = (
+    "🧮 <b>Historial de paridad</b>",
+    "La API no ha devuelto ninguna comprobación registrada.",
+    "sin fecha",
+    "no correctiva",
+    "correctiva",
+    "🔔 <b>Notificaciones</b>",
+    "No hay notificaciones en esta vista. ✅",
+    "Archivadas: ",
+    "Importancia: ",
+    "🪪 <b>Licencia y flash</b>",
+    "Estás en periodo de prueba: revisa la fecha de caducidad.",
+    "Dispositivo flash",
+    "🔌 <b>Plugins</b>",
+    "No hay plugins instalados o la API no los ha devuelto.",
+    "🧩 <b>Servicios</b>",
+    "La API no ha devuelto servicios.",
+    "Activos: ",
+    "La API no ha devuelto interfaces de red.",
+    "📜 <b>Logs</b>",
+    "El log está vacío.",
+    "📥 Enviar como archivo",
+    "Temperaturas y tráfico",
+    "No hay sensores de temperatura configurados.",
+    "Tráfico de red",
+    "Fuera de rango: ",
+    "Claves de API",
+    "No hay claves de API creadas.",
+    "El bot solo crea claves con rol VIEWER (solo lectura).",
+    "Identidad del servidor",
+    "🩺 <b>Diagnóstico</b>",
+    "No se han detectado incidencias.",
+    "Docker · mantenimiento",
+    "Actualizaciones pendientes: ",
+    "Conflictos de puertos",
+    "Sin conflictos de puertos detectados.",
+    "Docker · tamaños",
+    "No hay datos de tamaño disponibles.",
+    "Total de logs: ",
+    "Ese log ya no existe.",
+    "Ese share ya no existe.",
+    "Ese remoto ya no existe.",
+    "Ese disco ya no está en el array.",
+    "No hay remotos de rclone configurados.",
+    "💾 <b>Backup del flash</b>",
+    "🔑 <b>Clave creada</b>",
+    "⚠️ Cópiala ahora: no se volverá a mostrar.",
+    "🗑 <b>Clave de API borrada.</b>",
+    "🔐 <b>Iniciar array cifrado</b>",
+    "✅ <b>Array cifrado iniciado.</b>",
+    "🧮 <b>Comprobación de paridad correctiva</b>",
+    "🧮 <b>Comprobación de paridad no correctiva</b>",
+    "🧮 <b>Comprobación de paridad no correctiva iniciada.</b>",
+    "Esa notificación ya no existe.",
+    "➕ <b>Instalar plugin</b>",
+    "✅ <b>Plugin instalado.</b> Revisa si Unraid pide reiniciar.",
+    "📝 <b>Crear notificación en Unraid</b>",
+    "✅ <b>Notificación creada en Unraid</b>",
+    "Umbrales de temperatura",
+    "✅ <b>Umbrales actualizados en Unraid</b>",
+    "❌ El nombre no puede estar vacío.",
+    "🧹 Mantenimiento",
+    "📦 Tamaños",
+    "🕓 Historial paridad",
+    "🪪 Licencia",
+    "🧩 Servicios",
+    "🩺 Diagnóstico",
+    "🏷️ Identidad",
+    "🔑 Claves API",
+    "🌡️ Temperaturas",
+    "Elige el tipo:",
+    "✅ Correctiva (escribe)",
+    "👁️ No correctiva (solo lee)",
+    "🗂 Ver archivadas",
+    "📥 Ver sin leer",
+    "📋 Todas",
+    "🔄 Recargar",
+    "🔙 Licencia",
+    "⚙️ Umbrales",
+    "🔧 Configurar",
+    "➕ Crear clave VIEWER",
+    "✏️ Editar nombre",
+    "📂 Montar",
+    "📤 Desmontar",
+    "🔙 Notificaciones",
+    "🔙 Paridad",
+    "🧮 Paridad actual",
+    "Crear clave de API",
+    "La clave se mostrará una sola vez.",
+    "Esa clave ya no existe.",
+    "Editar identidad",
+    "🩺 Últimas 200 líneas del syslog",
+    "📜 Últimas 1000 líneas de ",
+)
+
+
 def test_catalogs_share_the_same_keys() -> None:
     reference = set(CATALOG["en"])
     for language in ("fr", "it"):
@@ -164,24 +261,32 @@ def test_extra_translations_are_complete() -> None:
 @pytest.mark.parametrize("language", LANGUAGES)
 def test_release_strings_are_translated(language: str) -> None:
     catalog = CATALOG[language]
-    for source in REQUIRED_STRINGS + REQUIRED_STRINGS_V14 + REQUIRED_STRINGS_V15 + REQUIRED_STRINGS_V152:
+    for source in ALL_REQUIRED_STRINGS:
         assert source in catalog, f"Falta {source!r} en {language}"
         assert catalog[source].strip(), f"Traducción vacía de {source!r} en {language}"
+
+
+ALL_REQUIRED_STRINGS = (
+    REQUIRED_STRINGS
+    + REQUIRED_STRINGS_V14
+    + REQUIRED_STRINGS_V15
+    + REQUIRED_STRINGS_V152
+    + REQUIRED_STRINGS_V160
+)
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
 def test_localize_uses_release_strings(language: str) -> None:
     set_language(language)
-    for source in REQUIRED_STRINGS + REQUIRED_STRINGS_V14 + REQUIRED_STRINGS_V15 + REQUIRED_STRINGS_V152:
-        translated = localize(source)
-        assert translated == CATALOG[language][source]
-        if language != "es":
-            assert translated != source
+    for source in ALL_REQUIRED_STRINGS:
+        # Puede coincidir con el español en nombres propios («Logs», «Plugins»)
+        # o en italiano («Dispositivo flash»), pero debe existir en el catálogo.
+        assert localize(source) == CATALOG[language][source]
 
 
 def test_spanish_remains_untranslated() -> None:
     set_language("es")
-    for source in REQUIRED_STRINGS + REQUIRED_STRINGS_V14 + REQUIRED_STRINGS_V15 + REQUIRED_STRINGS_V152:
+    for source in ALL_REQUIRED_STRINGS:
         assert localize(source) == source
 
 

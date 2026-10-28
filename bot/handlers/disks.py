@@ -69,10 +69,10 @@ async def show_physical_disks(update: Update, context: ContextTypes.DEFAULT_TYPE
             page = int(part)
     client = context.bot_data["client"]
     disks = await client.physical_disks()
-    _, page, pages = paginate(disks, page, PER_PAGE)
+    items, page, pages = paginate(disks, page, PER_PAGE)
     await render(
         update,
         context,
         build_physical_disks(disks, page, PER_PAGE),
-        physical_disks_keyboard(page, pages),
+        physical_disks_keyboard(items, page, pages),
     )
